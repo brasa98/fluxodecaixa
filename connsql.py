@@ -1,7 +1,6 @@
 import mysql.connector as mysqlc
 from prettytable import PrettyTable as pt
 
-# Configuração da conexão
 config = {
     'user': 'positivo',
     'password': '76190403',

@@ -1,10 +1,16 @@
 import connsql
-# from datetime import datetime
+from datetime import datetime
+
+d = datetime.now()
+#data = d.strftime("%d/%m/%Y")
 
 def main():
-    dia = int(input("Dia: "))
-    mes = input("Mês: ")
-    ano = input("Ano: ")
+    print(f"Data: {d.strftime('%d/%m/%Y')}")
+    dia = d.strftime("%d")
+    mes = d.strftime("%m")
+    mes = connsql.ntomonth(int(mes))
+
+    ano = d.strftime("%Y")
     ano = int(ano[2:4])
 
     educa = float(input("Educação R$"))
@@ -15,9 +21,9 @@ def main():
     total = educa + saude + lazer + outros
 
     con, cursor = connsql.connect()
-    cursor.execute(f"INSERT INTO {mes}{ano} (Dia, Educacao, Saude, Lazer, Outros, TOTAL) VALUES ({dia}, {educa}, {saude}, {lazer}, {outros}, {total})")
+    cursor.execute(f"INSERT INTO Trezembro99 (Dia, Educacao, Saude, Lazer, Outros, TOTAL) VALUES ({dia}, {educa}, {saude}, {lazer}, {outros}, {total})")
 
-    connsql.exec_show(cursor, f"SELECT * FROM {mes}{ano}")
+    connsql.exec_show(cursor, f"SELECT * FROM Trezembro99")
 
 if __name__ == "__main__": main()
 

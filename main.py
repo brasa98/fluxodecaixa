@@ -21,9 +21,9 @@ def main():
     total = educa + saude + lazer + outros
 
     con, cursor = connsql.connect()
-    cursor.execute(f"INSERT INTO Trezembro99 (Dia, Educacao, Saude, Lazer, Outros, TOTAL) VALUES ({dia}, {educa}, {saude}, {lazer}, {outros}, {total})")
+    cursor.execute(f"INSERT INTO {mes}{dia} (Dia, Educacao, Saude, Lazer, Outros, TOTAL) VALUES ({dia}, {educa}, {saude}, {lazer}, {outros}, {total})")
 
-    connsql.exec_show(cursor, f"SELECT * FROM Trezembro99")
+    connsql.exec_show(cursor, f"SELECT * FROM {mes}{dia}")
 
 if __name__ == "__main__": main()
 

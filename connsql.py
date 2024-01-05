@@ -16,7 +16,7 @@ def make_table(mes, ano, res=False):
     else: return f"CREATE TABLE {mes}{ano} (ID INT AUTO_INCREMENT PRIMARY KEY, Dia INT, Educacao FLOAT, Saude FLOAT, Lazer FLOAT, Outros FLOAT, SUBTOTAL FLOAT NOT NULL DEFAULT 0)"
 
 def show_tables(cursor):
-    tbs = pt(["Tables"])
+    tbs = pt(["Tabelas"])
     cursor.execute("SHOW TABLES")
 
     for table_name in cursor:

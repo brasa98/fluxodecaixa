@@ -1,13 +1,28 @@
 import mysql.connector as mysqlc
 from prettytable import PrettyTable as pt
 
+MESES = ["Janeiro", "Fevereiro", "Marco", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"]
+
 config = {
-    'user': 'positivo',
-    'password': '76190403',
+    'user': 'FDC_Roseli',
+    'password': 'Rosel1',
     'host': '192.168.15.32',
     'database': 'FDC',
     'raise_on_warnings': True,
 }
+
+def make_table(mes, ano, res=False):
+    if res: return f"CREATE TABLE {mes}{ano}R (Entradas FLOAT NOT NULL DEFAULT 0, Saidas FLOAT NOT NULL DEFAULT 0, TOTAL FLOAT NOT NULL DEFAULT 0)"
+    else: return f"CREATE TABLE {mes}{ano} (ID INT AUTO_INCREMENT PRIMARY KEY, Dia INT, Educacao FLOAT, Saude FLOAT, Lazer FLOAT, Outros FLOAT, SUBTOTAL FLOAT NOT NULL DEFAULT 0)"
+
+def show_tables(cursor):
+    tbs = pt(["Tables"])
+    cursor.execute("SHOW TABLES")
+
+    for table_name in cursor:
+        tbs.add_row(table_name)
+
+    print(tbs)
 
 def connect():
     try:
@@ -22,19 +37,23 @@ def connect():
     
     return connection, cursor
 
-def showTable(cursor):
-    results = cursor.fetchall()
+def show_table(cursor, vals, table):
+    if vals != "*": cursor.execute(f"SELECT ({vals}) FROM {table}")
+    else: cursor.execute(f"SELECT {vals} FROM {table}")
 
-    table = pt()
-    table.field_names = [i[0] for i in cursor.description]
-
+    results = cursor.fetchall()    
+    _ = pt()
+    _.field_names = [i[0] for i in cursor.description]
     for row in results:
-        table.add_row(row)
+        _.add_row(row)
+    print(_)
 
-    print(table)
-    return table
+def exec(cursor, query: str):
+    cursor.execute(query)
+    results = cursor.fetchall()
+    return results
 
-def exec_show(cursor, query: str):
+def exec_show(cursor, query: str) -> None:
     cursor.execute(query)
     results = cursor.fetchall()
 
@@ -45,19 +64,9 @@ def exec_show(cursor, query: str):
     print(_)
 
 def ntomonth(m: int):
-    match(m):
-        case 1: return "Janeiro"
-        case 2: return "Fevereiro"
-        case 3: return "Marco"
-        case 4: return "Abril"
-        case 5: return "Maio"
-        case 6: return "Junho"
-        case 7: return "Julho"
-        case 8: return "Agosto"
-        case 9: return "Setembro"
-        case 10: return "Outubro"
-        case 11: return "Novembro"
-        case 12: return "Dezembro"
+    for i in range(1,13):
+        if m == i:
+            return MESES[i-1]
 
 if __name__ == "__main__":
     connection, cursor = connect(**config)

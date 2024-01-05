@@ -1,11 +1,18 @@
 #Código funcional, simples e sem nenhum erro.
 
-Template de tabela: CREATE TABLE MesANO (ID INT AUTO_INCREMENT PRIMARY KEY, Dia INT, Educacao FLOAT, Saude FLOAT, Lazer FLOAT, Outros FLOAT, TOTAL FLOAT);
+Template de tabela: CREATE TABLE MesANO (ID INT AUTO_INCREMENT PRIMARY KEY, Dia INT, Educacao FLOAT, Saude FLOAT, Lazer FLOAT, Outros FLOAT, SUBTOTAL FLOAT NOT NULL DEFAULT 0);
 
-TODO'S:
+REGISTRO:
     -Adicionar detecção de data. FEITO (v1.5)
     -Adicionar uma tabela para cada mês. FEITO (v1)
-    -Adicionar uma tabela para o ano inteiro mostrando o resumo dos meses anteriores.
-	-Quanto ganhou (fim de mês).
-	-|ID; DIA; *GASTOS FIXOS*; TOTAL| (mensal) OK
-		>Gastos fixos: "Educação Saúde Lazer e Outros"
+    -Automaticamente criar tabelas do mês caso não existam FEITO (v1.7)
+    -Adicionar uma tabela para o ano inteiro mostrando o resumo dos meses anteriores. FEITO (v1.7)
+	-Quanto ganhou (fim de mês). EXP (v1.7)
+		> Tabela separada, NOME=MesAnoR
+		> Colunas: Entradas/Saídas/TOTAL	
+	-Adicionado um arquivo de configuração (fdc.ini) TR
+		> Principalmente para saber se já foi revisado o mês
+	-Criar uma DB por ano? talvez...
+	
+	--|ID; DIA; *GASTOS FIXOS*; SUBTOTAL| (mensal) OK
+		> Gastos fixos: "Educação Saúde Lazer e Outros"

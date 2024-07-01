@@ -6,7 +6,7 @@ MESES = ["Janeiro", "Fevereiro", "Marco", "Abril", "Maio", "Junho", "Julho", "Ag
 config = {
     'user': 'FDC_Roseli',
     'password': 'Rosel1',
-    'host': '192.168.15.32',
+    'host': '192.168.0.109',
     'database': 'FDC',
     'raise_on_warnings': True,
 }
@@ -28,12 +28,19 @@ def connect():
     try:
         connection = mysqlc.connect(**config)
         if connection.is_connected(): 
-            print("Conectado ao MySQL.")
+            print(f"Conectado ao MySQL (host:{config['host']})")
             cursor = connection.cursor()
             
     except mysqlc.Error as err:
-        print(f"Erro: {err}")
-        return err
+        try:
+            config['host'] = "192.168.15.32"
+            connection = mysqlc.connect(**config)
+            if connection.is_connected():
+                print(f"Conectado ao MySQL (host:{config['host']})")
+                cursor = connection.cursor()
+        except mysqlc.Error as err:
+            print(f"Erro: {err}")
+            return err
     
     return connection, cursor
 

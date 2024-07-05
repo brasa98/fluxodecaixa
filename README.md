@@ -1,8 +1,10 @@
-#Código funcional, simples e sem nenhum erro.
+# Fluxo de Caixa
+
+### Código funcional, simples e sem nenhum erro.
 
 Template de tabela: CREATE TABLE MesANO (ID INT AUTO_INCREMENT PRIMARY KEY, Dia INT, Educacao FLOAT, Saude FLOAT, Lazer FLOAT, Outros FLOAT, SUBTOTAL FLOAT NOT NULL DEFAULT 0);
 
-REGISTRO:
+# REGISTRO:
     -Adicionar detecção de data. FEITO (v1.5)
     -Adicionar uma tabela para cada mês. FEITO (v1)
     -Automaticamente criar tabelas do mês caso não existam FEITO (v1.7)

@@ -4,18 +4,25 @@ from prettytable import PrettyTable as pt
 MESES = ["Janeiro", "Fevereiro", "Marco", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"]
 
 config = {
-    'user': 'FDC_Roseli',
-    'password': 'Rosel1',
-    'host': '192.168.0.109',
-    'database': 'FDC',
+    'user': 'FDC',
+    'password': 'caixadefluxo',
+    'host': '192.168.15.32',
+    'database': 'Roseli',
     'raise_on_warnings': True,
 }
 
 def make_table(mes, ano, res=False):
+    """
+    Cria uma tabela com base no mês e ano.
+    res=False: Indica se a tabela será de resumo ou não
+    """
     if res: return f"CREATE TABLE {mes}{ano}R (Entradas FLOAT NOT NULL DEFAULT 0, Saidas FLOAT NOT NULL DEFAULT 0, TOTAL FLOAT NOT NULL DEFAULT 0)"
     else: return f"CREATE TABLE {mes}{ano} (ID INT AUTO_INCREMENT PRIMARY KEY, Dia INT, Educacao FLOAT, Saude FLOAT, Lazer FLOAT, Outros FLOAT, SUBTOTAL FLOAT NOT NULL DEFAULT 0)"
 
 def show_tables(cursor):
+    """
+    Mostra as tabelas disponíveis para visualização
+    """
     tbs = pt(["Tabelas"])
     cursor.execute("SHOW TABLES")
 
@@ -25,6 +32,9 @@ def show_tables(cursor):
     print(tbs)
 
 def connect():
+    """
+    Realiza a conexão ao MySQL com base no dicionário de configuração 'config'
+    """
     try:
         connection = mysqlc.connect(**config)
         if connection.is_connected(): 
@@ -45,6 +55,9 @@ def connect():
     return connection, cursor
 
 def show_table(cursor, vals, table):
+    """
+    Mostra os valores escolhidos de uma tabela.
+    """
     if vals != "*": cursor.execute(f"SELECT ({vals}) FROM {table}")
     else: cursor.execute(f"SELECT {vals} FROM {table}")
 
@@ -56,11 +69,17 @@ def show_table(cursor, vals, table):
     print(_)
 
 def exec(cursor, query: str):
+    """
+    Executa uma query MySQL
+    """
     cursor.execute(query)
     results = cursor.fetchall()
     return results
 
 def exec_show(cursor, query: str) -> None:
+    """
+    Executa uma query MySQL e exibe os resultados obtidos
+    """
     cursor.execute(query)
     results = cursor.fetchall()
 
@@ -71,6 +90,9 @@ def exec_show(cursor, query: str) -> None:
     print(_)
 
 def ntomonth(m: int):
+    """
+    Converte o número do mês para o nome do mês em si
+    """
     for i in range(1,13):
         if m == i:
             return MESES[i-1]

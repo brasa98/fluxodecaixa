@@ -2,32 +2,34 @@ import connsql, os
 from random import randint
 from datetime import datetime
 
+# Pega a data atual
 d = datetime.now()
 
 con, cursor = connsql.connect()
 dia = d.strftime("%d")
-# dia = randint(1,28)
-# dia = 28
+## dia = randint(1,28)
+## dia = 28
 mes = connsql.ntomonth(int(d.strftime("%m")))
-# mes = "Trezembro"
+## mes = "Trezembro"
 ano = int(d.strftime("%Y")[2:4])
-# ano = "99"
+## ano = "99"
 
 TAB = f"{mes}{ano}"
 
 def rmFeito():
-    if (int(dia) >= 28 and int(dia) <= 31) and not conf['resumo_mensal_feito']:
+    """Verifica se o resumo mensal foi feito"""
+    if (int(dia) >= 28 and int(dia) <= 31) and not conf['resumo_mensal_feito']: # Verificação
         _ = input("Deseja resumir seu mês? <s; n> ")
         if _.lower() == 's':
             print("Inicializando resumo do mês...")
             entra = float(input("Quanto você ganhou esse mês? R$"))
             cursor.execute(connsql.make_table(mes, ano, res=True))
             _ = connsql.exec(cursor, f"SELECT SUBTOTAL FROM {TAB}")
-            sai = 0
-            for i in _:
+            sai = 0 
+            for i in _: # Só Deus sabe o que esse for faz!
                 for j in i:
                     sai += j
-            total = entra - sai
+            total = entra - sai # Calcula o total com base nas entradas e saídas
 
             cursor.execute(f"INSERT INTO {TAB}R VALUES ({entra}, {sai}, {total})")
             connsql.show_table(cursor, "*", f"{TAB}R")
@@ -37,6 +39,9 @@ def rmFeito():
     return True
 
 def saidas():
+    """
+    Pega as saídas do usuário
+    """
     e = float(input("Educação R$"))
     s = float(input("Saude R$"))
     l = float(input("Lazer R$"))
@@ -50,6 +55,10 @@ if dia == 1: conf['resumo_mensal_feito'] = False
 with open("fdc.ini", "w") as f: f.write(str(conf))
 
 def main():
+    """
+    Função principal
+    """
+
     os.system("clear")
     print(f"Data: {datetime.now().strftime('%d/%m/%Y')}\n")
     _ = int(input("Olá Roseli, sou seu Fluxo de Caixa!\n\nO que deseja fazer hoje?\
@@ -58,7 +67,8 @@ def main():
     \n3-Consultar um dia\
     \n4-Ver tabela do mês\
     \n5-Ver outra tabela\n=>"))
-    match(_):
+
+    match(_): ## Match case imenso
         case 1: #Adicionar gastos de hoje
             educa, saude, lazer, outros = saidas()
             subtotal = educa + saude + lazer + outros 

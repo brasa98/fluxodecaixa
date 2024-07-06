@@ -43,7 +43,8 @@ def connect():
             
     except mysqlc.Error as err:
         try:
-            config['host'] = "192.168.15.32"
+            # Testa o outro host caso tenha dado errado
+            config['host'] = "192.168.0.109"
             connection = mysqlc.connect(**config)
             if connection.is_connected():
                 print(f"Conectado ao MySQL (host:{config['host']})")

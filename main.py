@@ -68,7 +68,7 @@ def main():
     \n4-Ver tabela do mês\
     \n5-Ver outra tabela\n=>"))
 
-    match(_): ## Match case imenso
+    match(_): # Match case imenso
         case 1: #Adicionar gastos de hoje
             educa, saude, lazer, outros = saidas()
             subtotal = educa + saude + lazer + outros 

@@ -104,7 +104,7 @@ def main():
 
     connsql.sync(cursor)
     print(f"Data atual: {datetime.now().strftime('%d/%m/%Y')}")
-    print(f"Data usada: {dia}/{mes}/{ano}\n")
+    print(f"Data usada: {dia} de {mes}, {ano}\n")
     TAB = f"{mes}{ano}"
     _ = int(input(f"Olá {user}, sou seu Fluxo de Caixa!\n\nO que deseja fazer hoje?\
     \n1-Adicionar gastos de hoje\

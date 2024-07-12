@@ -1,5 +1,5 @@
 import connsql, os
-from mysql.connector import DatabaseError
+from mysql.connector import ProgrammingError
 from random import randint
 from datetime import datetime
 
@@ -105,6 +105,7 @@ def main():
     connsql.sync(cursor)
     print(f"Data atual: {datetime.now().strftime('%d/%m/%Y')}")
     print(f"Data usada: {dia}/{mes}/{ano}\n")
+    TAB = f"{mes}{ano}"
     _ = int(input(f"Olá {user}, sou seu Fluxo de Caixa!\n\nO que deseja fazer hoje?\
     \n1-Adicionar gastos de hoje\
     \n2-Remover os gastos de um dia\
@@ -114,13 +115,16 @@ def main():
     \n\n0-Mudar data\
     \n\n=>"))
 
+    try: cursor.execute(connsql.make_table(mes, ano))
+    except ProgrammingError: pass
+
     match(_):
         case 1: # Adicionar gastos de hoje
             educa, saude, lazer, outros = saidas()
             subtotal = educa + saude + lazer + outros 
             try:
                 cursor.execute(f"INSERT INTO {TAB} (Dia, Educacao, Saude, Lazer, Outros, SUBTOTAL) VALUES ({dia}, {educa}, {saude}, {lazer}, {outros}, {subtotal})")
-            except:
+            except ProgrammingError:
                 cursor.execute(connsql.make_table(mes, ano))
                 cursor.execute(f"INSERT INTO {TAB} (Dia, Educacao, Saude, Lazer, Outros, SUBTOTAL) VALUES ({dia}, {educa}, {saude}, {lazer}, {outros}, {subtotal})")
             finally:
@@ -142,9 +146,8 @@ def main():
             connsql.show_table(cursor, "*", t)
         case 0: # Mudar data
             dia = input("Dia: ")
-            mes = input("Mês: ")
-            ano = input("Ano: ")
-            ano = ano[2:4]
+            mes = connsql.ntomonth(int(input("Mês: ")))
+            ano = input("Ano: ")[2:4]
             main()
 
 

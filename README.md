@@ -14,7 +14,10 @@ Template de tabela: CREATE TABLE MesANO (ID INT AUTO_INCREMENT PRIMARY KEY, Dia 
 		> Colunas: Entradas/Saídas/TOTAL	
 	-Adicionado um arquivo de configuração (fdc.ini) TR
 		> Principalmente para saber se já foi revisado o mês
-	-Criar uma DB por ano? talvez...
+	-Criar uma DB por ano? talvez...não
 	
 	--|ID; DIA; *GASTOS FIXOS*; SUBTOTAL| (mensal) OK
 		> Gastos fixos: "Educação Saúde Lazer e Outros"
+	
+	-Adicionado o gerenciamento de usuários WIP (v2.0)
+		> Usuários localizados no fdc.ini

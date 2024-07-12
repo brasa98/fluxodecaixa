@@ -1,14 +1,16 @@
 import connsql, os
+from mysql.connector import DatabaseError
 from random import randint
 from datetime import datetime
 
-# Pega a data atual
-d = datetime.now()
+# Verifica o SO, e define o comando de limpar a tela
+if os.name == 'nt': CL = "cls"
+else: CL = "clear"
 
-con, cursor = connsql.connect()
+d = datetime.now()
 dia = d.strftime("%d")
 ## dia = randint(1,28)
-## dia = 28
+## dia = 3
 mes = connsql.ntomonth(int(d.strftime("%m")))
 ## mes = "Trezembro"
 ano = int(d.strftime("%Y")[2:4])
@@ -16,8 +18,11 @@ ano = int(d.strftime("%Y")[2:4])
 
 TAB = f"{mes}{ano}"
 
-def rmFeito():
-    """Verifica se o resumo mensal foi feito"""
+def rmFeito(con, cursor):
+    """
+    Verifica se o resumo mensal foi feito
+    """
+    TAB = f"{mes}{dia}"
     if (int(dia) >= 28 and int(dia) <= 31) and not conf['resumo_mensal_feito']: # Verificação
         _ = input("Deseja resumir seu mês? <s; n> ")
         if _.lower() == 's':
@@ -38,6 +43,47 @@ def rmFeito():
             with open("fdc.ini", "w") as f: f.write(str(conf))
     return True
 
+
+def login():
+    """
+    Lógica de usuários para o Fluxo de Caixa
+    """
+
+    os.system(CL)
+    print(f"Usuários disponíveis: {conf['databases']}")
+    user = input("Usuário: ").capitalize()
+
+    if user in conf['databases']: connsql.config['database'] = user # Verifica se o usuário existe
+    else:
+        _ = input("Usuário não encontrado!\nDeseja criá-lo (s/n)? ")
+
+        if _.lower() == 's':
+            conf['databases'].append(user)
+            with open('fdc.ini', 'w') as f: f.write(str(conf)) # Registra o usuário no arquivo ini
+
+            # Cria a database do usuário
+            connsql.config['database'] = "Roseli"
+            con, cursor = connsql.connect()
+            cursor.execute(f"CREATE DATABASE {user}")
+
+            os.system(CL)
+            print("Reinicie o programa para aplicar as alterações!")
+            quit()
+        elif _.lower() == 'n':
+            print("Abortar missão!")
+
+    con, cursor = connsql.connect()
+
+    return user, con, cursor
+
+# Carrega o arquivo de configuração na variável 'conf'
+with open("fdc.ini", "r") as f: conf = eval(f.readline())
+user, con, cursor = login()
+conf['resumo_mensal_feito'] = rmFeito(con, cursor)
+if dia == 1: conf['resumo_mensal_feito'] = False
+with open("fdc.ini", "w") as f: f.write(str(conf))
+
+
 def saidas():
     """
     Pega as saídas do usuário
@@ -48,28 +94,28 @@ def saidas():
     o = float(input("Outros gastos R$"))
     return e, s, l, o
  
-with open("fdc.ini", "r") as f: conf = eval(f.readline())
-
-conf['resumo_mensal_feito'] = rmFeito()
-if dia == 1: conf['resumo_mensal_feito'] = False
-with open("fdc.ini", "w") as f: f.write(str(conf))
 
 def main():
     """
     Função principal
     """
+    global dia, mes, ano
+    os.system(CL)
 
-    os.system("clear")
-    print(f"Data: {datetime.now().strftime('%d/%m/%Y')}\n")
-    _ = int(input("Olá Roseli, sou seu Fluxo de Caixa!\n\nO que deseja fazer hoje?\
+    connsql.sync(cursor)
+    print(f"Data atual: {datetime.now().strftime('%d/%m/%Y')}")
+    print(f"Data usada: {dia}/{mes}/{ano}\n")
+    _ = int(input(f"Olá {user}, sou seu Fluxo de Caixa!\n\nO que deseja fazer hoje?\
     \n1-Adicionar gastos de hoje\
     \n2-Remover os gastos de um dia\
     \n3-Consultar um dia\
     \n4-Ver tabela do mês\
-    \n5-Ver outra tabela\n=>"))
+    \n5-Ver outra tabela\
+    \n\n0-Mudar data\
+    \n\n=>"))
 
-    match(_): # Match case imenso
-        case 1: #Adicionar gastos de hoje
+    match(_):
+        case 1: # Adicionar gastos de hoje
             educa, saude, lazer, outros = saidas()
             subtotal = educa + saude + lazer + outros 
             try:
@@ -80,20 +126,27 @@ def main():
             finally:
                 connsql.show_table(cursor, "*", TAB)
                 con.commit()
-        case 2: #Remover gastos de um dia
+        case 2: # Remover gastos de um dia
             connsql.show_table(cursor, "*", TAB)
             id = input("Digite o ID da linha que você quer remover: ")
             cursor.execute(f"DELETE FROM {TAB} WHERE ID={id}")
             con.commit()
-        case 3: #Consultar dia
+        case 3: # Consultar dia
             d = int(input("Qual dia você deseja ver? "))
             connsql.exec_show(cursor, f"SELECT * FROM {TAB} WHERE Dia={d}")
-        case 4: #Ver mês
+        case 4: # Ver mês
             connsql.show_table(cursor, "*", TAB)
-        case 5: #Ver outra tabela
+        case 5: # Ver outra tabela
             connsql.show_tables(cursor)
             t = input("Digite o nome da tabela: ")
             connsql.show_table(cursor, "*", t)
+        case 0: # Mudar data
+            dia = input("Dia: ")
+            mes = input("Mês: ")
+            ano = input("Ano: ")
+            ano = ano[2:4]
+            main()
+
 
 if __name__ == "__main__": main()
 

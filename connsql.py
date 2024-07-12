@@ -90,6 +90,24 @@ def exec_show(cursor, query: str) -> None:
         _.add_row(row)
     print(_)
 
+def sync(cursor):
+    """
+    Sincroniza as databases do MySQL para o fdc.ini
+    """
+    dbs = []
+    with open("fdc.ini", "r") as f: fdc_conf = eval(f.readline())
+
+    dbb = exec(cursor, 'SHOW DATABASES')
+    for _ in range(4): dbb.pop(-1) # Remove da lista as DB's que são do sistema
+
+    for tupl in dbb:
+        for db in tupl:
+            dbs.append(db)
+
+    fdc_conf['databases'] = dbs
+
+    with open("fdc.ini", "w") as f: f.write(str(fdc_conf))
+
 def ntomonth(m: int):
     """
     Converte o número do mês para o nome do mês em si

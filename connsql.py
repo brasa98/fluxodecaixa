@@ -59,8 +59,8 @@ def show_table(cursor, vals, table):
     """
     Mostra os valores escolhidos de uma tabela.
     """
-    if vals != "*": cursor.execute(f"SELECT ({vals}) FROM {table}")
-    else: cursor.execute(f"SELECT {vals} FROM {table}")
+    if vals != "*": cursor.execute(f"SELECT ({vals}) FROM {table} ORDER BY Dia ASC")
+    else: cursor.execute(f"SELECT {vals} FROM {table} ORDER BY Dia ASC")
 
     results = cursor.fetchall()    
     _ = pt()

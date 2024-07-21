@@ -21,3 +21,5 @@ Template de tabela: CREATE TABLE MesANO (ID INT AUTO_INCREMENT PRIMARY KEY, Dia 
 	
 	-Adicionado o gerenciamento de usuários WIP (v2.0)
 		> Usuários localizados no fdc.ini
+
+	-Adicionar coluna string para identificar cada gasto (v2.1)

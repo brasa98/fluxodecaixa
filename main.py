@@ -50,6 +50,14 @@ def login():
     """
 
     os.system(CL)
+    
+    if conf['default_db'] is not None:
+        user = conf['default_db']
+        print(user)
+        connsql.config['database'] = user
+        con, cursor = connsql.connect()
+        return user, con, cursor
+    
     print(f"Usuários disponíveis: {conf['databases']}")
     user = input("Usuário: ").capitalize()
 
@@ -71,6 +79,7 @@ def login():
             quit()
         elif _.lower() == 'n':
             print("Abortar missão!")
+            quit()
 
     con, cursor = connsql.connect()
 
@@ -99,7 +108,7 @@ def main():
     """
     Função principal
     """
-    global dia, mes, ano
+    global dia, mes, ano, user
     os.system(CL)
 
     connsql.sync(cursor)
@@ -112,7 +121,7 @@ def main():
     \n3-Consultar um dia\
     \n4-Ver tabela do mês\
     \n5-Ver outra tabela\
-    \n\n0-Mudar data\
+    \n\n0-Opções\
     \n\n=>"))
 
     try: cursor.execute(connsql.make_table(mes, ano))
@@ -137,19 +146,28 @@ def main():
             con.commit()
         case 3: # Consultar dia
             d = int(input("Qual dia você deseja ver? "))
-            connsql.exec_show(cursor, f"SELECT * FROM {TAB} WHERE Dia={d}")
+            connsql.exec_show(cursor, f"SELECT * FROM {TAB} WHERE Dia={d} ORDER BY Dia ASC")
         case 4: # Ver mês
             connsql.show_table(cursor, "*", TAB)
         case 5: # Ver outra tabela
             connsql.show_tables(cursor)
             t = input("Digite o nome da tabela: ")
             connsql.show_table(cursor, "*", t)
-        case 0: # Mudar data
-            dia = input("Dia: ")
-            mes = connsql.ntomonth(int(input("Mês: ")))
-            ano = input("Ano: ")[2:4]
-            main()
+        case 0: # Opções
+            os.system(CL)
+            _ = int(input("Selecione uma abaixo:\n1-Alterar data\n2-Definir usuário padrão\n3-Mudar usuário\n\n=>"))
+            if _ == 1:
+                dia = input("Dia: ")
+                mes = connsql.ntomonth(int(input("Mês: ")))
+                ano = input("Ano: ")[2:4]
+                main()
+            elif _ == 2:
+                with open("fdc.ini", "r") as f: conf = eval(f.readline())
+                print(f"Usuários disponíveis: {conf['databases']}")
+                user = input("Usuário padrão: ").capitalize()
 
+                conf['default_db'] = user
+                with open('fdc.ini', 'w') as f: f.write(str(conf))
 
 if __name__ == "__main__": main()
 

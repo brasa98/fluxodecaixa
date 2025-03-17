@@ -1,4 +1,5 @@
-import connsql, os
+import os
+import connsql, backend
 from mysql.connector import ProgrammingError
 from random import randint
 from datetime import datetime
@@ -112,62 +113,72 @@ def main():
     os.system(CL)
 
     connsql.sync(cursor)
-    print(f"Data atual: {datetime.now().strftime('%d/%m/%Y')}")
-    print(f"Data usada: {dia} de {mes}, {ano}\n")
-    TAB = f"{mes}{ano}"
-    _ = int(input(f"Olá {user}, sou seu Fluxo de Caixa!\n\nO que deseja fazer hoje?\
-    \n1-Adicionar gastos de hoje\
-    \n2-Remover os gastos de um dia\
-    \n3-Consultar um dia\
-    \n4-Ver tabela do mês\
-    \n5-Ver outra tabela\
-    \n\n0-Opções\
-    \n\n=>"))
 
-    try: cursor.execute(connsql.make_table(mes, ano))
-    except ProgrammingError: pass
+    tipo_execucao = int(input("Usuário, selecione uma opção:\
+                            \n1-Executar diretamente (pela linha de comando)\
+                            \n2-Executar interface web (EXPERIMENTAL)\
+                            \n\n=>"))
+    
+    if tipo_execucao == 1:
+        print(f"Data atual: {datetime.now().strftime('%d/%m/%Y')}")
+        print(f"Data usada: {dia} de {mes}, {ano}\n")
+        TAB = f"{mes}{ano}"
+        _ = int(input(f"Olá {user}, sou seu Fluxo de Caixa!\n\nO que deseja fazer hoje?\
+        \n1-Adicionar gastos de hoje\
+        \n2-Remover os gastos de um dia\
+        \n3-Consultar um dia\
+        \n4-Ver tabela do mês\
+        \n5-Ver outra tabela\
+        \n\n0-Opções\
+        \n\n=>"))
 
-    match(_):
-        case 1: # Adicionar gastos de hoje
-            educa, saude, lazer, outros = saidas()
-            subtotal = educa + saude + lazer + outros 
-            try:
-                cursor.execute(f"INSERT INTO {TAB} (Dia, Educacao, Saude, Lazer, Outros, SUBTOTAL) VALUES ({dia}, {educa}, {saude}, {lazer}, {outros}, {subtotal})")
-            except ProgrammingError:
-                cursor.execute(connsql.make_table(mes, ano))
-                cursor.execute(f"INSERT INTO {TAB} (Dia, Educacao, Saude, Lazer, Outros, SUBTOTAL) VALUES ({dia}, {educa}, {saude}, {lazer}, {outros}, {subtotal})")
-            finally:
+        try: cursor.execute(connsql.make_table(mes, ano))
+        except ProgrammingError: pass
+
+        match(_):
+            case 1: # Adicionar gastos de hoje
+                educa, saude, lazer, outros = saidas()
+                subtotal = educa + saude + lazer + outros 
+                try:
+                    cursor.execute(f"INSERT INTO {TAB} (Dia, Educacao, Saude, Lazer, Outros, SUBTOTAL) VALUES ({dia}, {educa}, {saude}, {lazer}, {outros}, {subtotal})")
+                except ProgrammingError:
+                    cursor.execute(connsql.make_table(mes, ano))
+                    cursor.execute(f"INSERT INTO {TAB} (Dia, Educacao, Saude, Lazer, Outros, SUBTOTAL) VALUES ({dia}, {educa}, {saude}, {lazer}, {outros}, {subtotal})")
+                finally:
+                    connsql.show_table(cursor, "*", TAB)
+                    con.commit()
+            case 2: # Remover gastos de um dia
                 connsql.show_table(cursor, "*", TAB)
+                id = input("Digite o ID da linha que você quer remover: ")
+                cursor.execute(f"DELETE FROM {TAB} WHERE ID={id}")
                 con.commit()
-        case 2: # Remover gastos de um dia
-            connsql.show_table(cursor, "*", TAB)
-            id = input("Digite o ID da linha que você quer remover: ")
-            cursor.execute(f"DELETE FROM {TAB} WHERE ID={id}")
-            con.commit()
-        case 3: # Consultar dia
-            d = int(input("Qual dia você deseja ver? "))
-            connsql.exec_show(cursor, f"SELECT * FROM {TAB} WHERE Dia={d} ORDER BY Dia ASC")
-        case 4: # Ver mês
-            connsql.show_table(cursor, "*", TAB)
-        case 5: # Ver outra tabela
-            connsql.show_tables(cursor)
-            t = input("Digite o nome da tabela: ")
-            connsql.show_table(cursor, "*", t)
-        case 0: # Opções
-            os.system(CL)
-            _ = int(input("Selecione uma abaixo:\n1-Alterar data\n2-Definir usuário padrão\n3-Mudar usuário\n\n=>"))
-            if _ == 1:
-                dia = input("Dia: ")
-                mes = connsql.ntomonth(int(input("Mês: ")))
-                ano = input("Ano: ")[2:4]
-                main()
-            elif _ == 2:
-                with open("fdc.ini", "r") as f: conf = eval(f.readline())
-                print(f"Usuários disponíveis: {conf['databases']}")
-                user = input("Usuário padrão: ").capitalize()
+            case 3: # Consultar dia
+                d = int(input("Qual dia você deseja ver? "))
+                connsql.exec_show(cursor, f"SELECT * FROM {TAB} WHERE Dia={d} ORDER BY Dia ASC")
+            case 4: # Ver mês
+                connsql.show_table(cursor, "*", TAB)
+            case 5: # Ver outra tabela
+                connsql.show_tables(cursor)
+                t = input("Digite o nome da tabela: ")
+                connsql.show_table(cursor, "*", t)
+            case 0: # Opções
+                os.system(CL)
+                _ = int(input("Selecione uma abaixo:\n1-Alterar data\n2-Definir usuário padrão\n3-Mudar usuário\n\n=>"))
+                if _ == 1:
+                    dia = input("Dia: ")
+                    mes = connsql.ntomonth(int(input("Mês: ")))
+                    ano = input("Ano: ")[2:4]
+                    main()
+                elif _ == 2:
+                    with open("fdc.ini", "r") as f: conf = eval(f.readline())
+                    print(f"Usuários disponíveis: {conf['databases']}")
+                    user = input("Usuário padrão: ").capitalize()
 
-                conf['default_db'] = user
-                with open('fdc.ini', 'w') as f: f.write(str(conf))
+                    conf['default_db'] = user
+                    with open('fdc.ini', 'w') as f: f.write(str(conf))
+    elif tipo_execucao == 2:
+        backend.iniciar(host="brasa.onthewifi.com")
+
 
 if __name__ == "__main__": main()
 

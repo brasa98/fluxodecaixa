@@ -1,3 +1,6 @@
 mysql.connector.python
 prettytable
 datetime
+random
+flask
+waitress

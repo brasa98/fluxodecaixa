@@ -4,8 +4,8 @@ from prettytable import PrettyTable as pt
 MESES = ["Janeiro", "Fevereiro", "Marco", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"]
 
 config = {
-    'user': 'FDC',
-    'password': 'caixadefluxo',
+    'user': 'Garracio',
+    'password': 'garracio',
     'host': '192.168.15.32',
     'database': 'Roseli',
     'raise_on_warnings': True,
@@ -92,10 +92,10 @@ def exec_show(cursor, query: str) -> None:
 
 def sync(cursor):
     """
-    Sincroniza as databases do MySQL para o fdc.ini
+    Sincroniza as databases do MySQL para o garracio.ini
     """
     dbs = []
-    with open("fdc.ini", "r") as f: fdc_conf = eval(f.readline())
+    with open("garracio.ini", "r") as f: fdc_conf = eval(f.readline())
 
     dbb = exec(cursor, 'SHOW DATABASES')
     for _ in range(4): dbb.pop(-1) # Remove da lista as DB's que são do sistema
@@ -106,7 +106,7 @@ def sync(cursor):
 
     fdc_conf['databases'] = dbs
 
-    with open("fdc.ini", "w") as f: f.write(str(fdc_conf))
+    with open("garracio.ini", "w") as f: f.write(str(fdc_conf))
 
 def ntomonth(m: int):
     """

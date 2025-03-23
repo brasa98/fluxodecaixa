@@ -41,13 +41,13 @@ def rmFeito(con, cursor):
             connsql.show_table(cursor, "*", f"{TAB}R")
             con.commit()
     
-            with open("fdc.ini", "w") as f: f.write(str(conf))
+            with open("garracio.ini", "w") as f: f.write(str(conf))
     return True
 
 
 def login():
     """
-    Lógica de usuários para o Fluxo de Caixa
+    Lógica de usuários para o Garracio
     """
 
     os.system(CL)
@@ -68,7 +68,7 @@ def login():
 
         if _.lower() == 's':
             conf['databases'].append(user)
-            with open('fdc.ini', 'w') as f: f.write(str(conf)) # Registra o usuário no arquivo ini
+            with open('garracio.ini', 'w') as f: f.write(str(conf)) # Registra o usuário no arquivo ini
 
             # Cria a database do usuário
             connsql.config['database'] = "Roseli"
@@ -87,11 +87,11 @@ def login():
     return user, con, cursor
 
 # Carrega o arquivo de configuração na variável 'conf'
-with open("fdc.ini", "r") as f: conf = eval(f.readline())
+with open("garracio.ini", "r") as f: conf = eval(f.readline())
 user, con, cursor = login()
 conf['resumo_mensal_feito'] = rmFeito(con, cursor)
 if dia == 1: conf['resumo_mensal_feito'] = False
-with open("fdc.ini", "w") as f: f.write(str(conf))
+with open("garracio.ini", "w") as f: f.write(str(conf))
 
 
 def saidas():
@@ -123,7 +123,7 @@ def main():
         print(f"Data atual: {datetime.now().strftime('%d/%m/%Y')}")
         print(f"Data usada: {dia} de {mes}, {ano}\n")
         TAB = f"{mes}{ano}"
-        _ = int(input(f"Olá {user}, sou seu Fluxo de Caixa!\n\nO que deseja fazer hoje?\
+        _ = int(input(f"Olá {user}, bem vindo ao Garracio!\n\nO que deseja fazer hoje?\
         \n1-Adicionar gastos de hoje\
         \n2-Remover os gastos de um dia\
         \n3-Consultar um dia\
@@ -170,12 +170,12 @@ def main():
                     ano = input("Ano: ")[2:4]
                     main()
                 elif _ == 2:
-                    with open("fdc.ini", "r") as f: conf = eval(f.readline())
+                    with open("garracio.ini", "r") as f: conf = eval(f.readline())
                     print(f"Usuários disponíveis: {conf['databases']}")
                     user = input("Usuário padrão: ").capitalize()
 
                     conf['default_db'] = user
-                    with open('fdc.ini', 'w') as f: f.write(str(conf))
+                    with open('garracio.ini', 'w') as f: f.write(str(conf))
     elif tipo_execucao == 2:
         backend.iniciar(host="brasa.onthewifi.com")
 

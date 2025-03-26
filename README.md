@@ -52,30 +52,44 @@ Esse projeto foi feito para destacar a importância de gerenciar seus gastos, co
 
 # Histórico de Atualizações:
 <a id="historico"></a>
+
 - [X] Adicionar detecção de data. (v1.5)
+
 - [X] Adicionar uma tabela para cada mês. (v1)
+
 - [X] Automaticamente criar tabelas do mês caso não existam. (v1.7)
+
 - [X] Adicionar uma tabela para o ano inteiro mostrando o resumo dos meses anteriores. (v1.7)
-- [ ] Quanto ganhou (fim de mês). EXP (v1.7)
+
+- [X] Quanto ganhou (fim de mês). EXP (v1.7)
 	> Tabela separada, NOME=MesAnoR
-	> Colunas: Entradas/Saídas/TOTAL	
+	> Colunas: Entradas/Saídas/TOTAL
+
 - [X] Adicionado um arquivo de configuração (fdc.ini)
 	> Principalmente para saber se já foi revisado o mês
+
 - [ ] Criar uma DB por ano?
 	> talvez... não
+
 - [X] |ID; DIA; *GASTOS FIXOS*; SUBTOTAL| (mensal)
 	> Gastos fixos: "Educação Saúde Lazer e Outros"
-- [ ] Adicionado o gerenciamento de usuários WIP (v2.0)
+
+- [X] Adicionado o gerenciamento de usuários WIP (v2.0)
 	> Usuários localizados no fdc.ini
 
-- [ ] Adicionar coluna string para identificar cada gasto. (v2.2)
+- [X] Adicionar coluna string para identificar cada gasto. EXP (v2.2)
 
-- [ ] Adicionar usuário padrão e menu de opções. WIP (v2.1)
+- [X] Adicionar usuário padrão e menu de opções. WIP (v2.1)
+    > Desisti do negócio de usuário padrão. Mas o menu ta funcionando
 
 - [X] Ordenar gastos por dia. (v2.1)
 
 - [ ] Adicionar uma interface gráfica web. WIP ()
 	> Usando HTML
 
-- [ ] Personalização das colunas das tabelas ()
+- [X] Personalização das colunas das tabelas. EXP ()
 
+- [ ] Configuração do intervalo de dias para fazer o resumo mensal.
+
+- [ ] Adicionar login com senha por usuário, tanto headless quanto na web.
+    > Acho melhor usar a senha da database como senha única ao invés de uma por usuário

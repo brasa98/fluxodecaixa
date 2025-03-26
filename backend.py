@@ -1,26 +1,34 @@
 from flask import Flask, render_template, request
 from waitress import serve
-#import main, connsql
+import connsql
 
 app = Flask(__name__)
 
-@app.route('/')
-def index():
-    return render_template('index.html')
+dataSimulada = ""
 
-@app.route('/armazenar')
+@app.route('/', methods=['GET', 'POST'])
+def index():
+    return render_template('index.html', usuario=connsql.config['database'])
+
+@app.route('/armazenar', methods=['GET', 'POST'])
 def armazenar():
     return render_template('armazenar.html')
 
-@app.route('/consultar')
+@app.route('/consultar', methods=['GET', 'POST'])
 def consultar():
     return render_template('consultar.html')
 
-@app.route('/opcoes')
+@app.route('/opcoes', methods=['GET', 'POST'])
 def opcoes():
-    return render_template('opcoes.html')
+    global dataSimulada
 
-def iniciar(host="0.0.0.0", porta="5000"):
+    if request.method == "POST":
+        dataSimulada = request.form.get("dataSimulada")  # Pega o valor do campo de texto
+        print(f"Configuração salva: {dataSimulada}")
+
+    return render_template('opcoes.html', dataSimulada=dataSimulada)
+
+def iniciar(host="0.0>.0.0", porta="5000", usuario=''):
     if host == "0.0.0.0":
         print(f"\n\nSERVIDOR WEB ONLINE!\n\nAcesse 'http://{host}:{porta}'")
         serve(app, host="0.0.0.0", port=porta)

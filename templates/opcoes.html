@@ -18,7 +18,14 @@
 
     <div id="home">
         <h1>Opções</h1>
-        
+        {% if dataSimulada %}
+            <p><strong>Data simulada:</strong> {{ dataSimulada }}</p>
+        {% endif %}
+        <form method="POST">
+            <label for="config_text">Digite a data:</label>
+            <input type="text" id="dataSimulada" name="dataSimulada" value="{{ dataSimulada }}">
+            <button type="submit">Salvar</button>
+        </form>
     </div>
 </body>
 </html>

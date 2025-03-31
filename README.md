@@ -17,7 +17,7 @@ Esse projeto foi feito para destacar a importância de gerenciar seus gastos, co
 - Tabelas mensais
 - Execução híbrida (linha de comando e web)
 - Suporte para mais de um usuário
-- Arquivo de configuração (garracio.ini)
+- Arquivo de configuração (garracio.json)
 - Executável para configuração do banco de dados (*por enquanto, apenas com Linux*)
 
 ## Instalação
@@ -65,7 +65,7 @@ Esse projeto foi feito para destacar a importância de gerenciar seus gastos, co
 	> Tabela separada, NOME=MesAnoR
 	> Colunas: Entradas/Saídas/TOTAL
 
-- [X] Adicionado um arquivo de configuração (fdc.ini)
+- [X] Adicionado um arquivo de configuração (garracio.json)
 	> Principalmente para saber se já foi revisado o mês
 
 - [ ] Criar uma DB por ano?
@@ -73,23 +73,27 @@ Esse projeto foi feito para destacar a importância de gerenciar seus gastos, co
 
 - [X] |ID; DIA; *GASTOS FIXOS*; SUBTOTAL| (mensal)
 	> Gastos fixos: "Educação Saúde Lazer e Outros"
+    > OUUUU, com a nova atualização v2.5, colunas personalizadas!
 
-- [X] Adicionado o gerenciamento de usuários WIP (v2.0)
-	> Usuários localizados no fdc.ini
+- [X] Adicionado o gerenciamento de usuários. (v2.0)
+	> Usuários localizados no garracio.json
 
-- [X] Adicionar coluna string para identificar cada gasto. EXP (v2.2)
+- [X] Adicionar coluna string para identificar cada gasto. (v2.5)
 
-- [X] Adicionar usuário padrão e menu de opções. WIP (v2.1)
+- [X] Adicionar usuário padrão e menu de opções. (v2.5)
     > Desisti do negócio de usuário padrão. Mas o menu ta funcionando
 
 - [X] Ordenar gastos por dia. (v2.1)
 
 - [ ] Adicionar uma interface gráfica web. WIP ()
-	> Usando HTML
+	> Usando HTML, CSS e Flask
 
-- [X] Personalização das colunas das tabelas. EXP ()
+- [X] Personalização das colunas das tabelas. (v2.5)
 
 - [ ] Configuração do intervalo de dias para fazer o resumo mensal.
+
+- [X] Separação das configurações por usuário. WIP (v2.5)
+    > "Lucas": {"config": [], "colunas": []}
 
 - [ ] Adicionar login com senha por usuário, tanto headless quanto na web.
     > Acho melhor usar a senha da database como senha única ao invés de uma por usuário

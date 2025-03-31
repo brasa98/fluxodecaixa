@@ -1,23 +1,43 @@
 import mysql.connector as mysqlc
 from prettytable import PrettyTable as pt
+import json as j
 
 MESES = ["Janeiro", "Fevereiro", "Marco", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"]
+COLUNAS_PADRAO = ["Etiqueta", "Educação", "Saúde", "Lazer", "Outros"]
 
 config = {
     'user': 'Garracio',
     'password': 'garracio',
-    'host': '192.168.15.32',
-    'database': 'Roseli',
+    'host': 'brasa.onthewifi.com',
+    #'database': 'Roseli',
     'raise_on_warnings': True,
 }
 
-def criarTabela(mes, ano, res=False): #TODO: Corrigir as linhas 19 e 20 de acordo com a linha 90 do README.md
+def criarTabela(mes, ano, colunas=COLUNAS_PADRAO, res=False): #TODO: testar
     """
     Cria uma tabela com base no mês e ano.
     res=False: Indica se a tabela será de resumo ou não
     """
-    if res: return f"CREATE TABLE {mes}{ano}R (Entradas FLOAT NOT NULL DEFAULT 0, Saidas FLOAT NOT NULL DEFAULT 0, TOTAL FLOAT NOT NULL DEFAULT 0)"
-    else: return f"CREATE TABLE {mes}{ano} (ID INT AUTO_INCREMENT PRIMARY KEY, Dia INT, Educacao FLOAT, Saude FLOAT, Lazer FLOAT, Outros FLOAT, SUBTOTAL FLOAT NOT NULL DEFAULT 0)"
+
+    colunas_cp = colunas.copy()
+
+    if res:
+        return f"CREATE TABLE {mes}{ano}R  (Entradas FLOAT NOT NULL DEFAULT 0, \
+                                            Saidas FLOAT NOT NULL DEFAULT 0, \
+                                            TOTAL FLOAT NOT NULL DEFAULT 0)"
+    else:
+        if colunas == COLUNAS_PADRAO:
+            return f"CREATE TABLE {mes}{ano} (ID INT AUTO_INCREMENT PRIMARY KEY, \
+                                            Dia INT, Etiqueta VARCHAR(30) NOT NULL, \
+                                            Educacao FLOAT, Saude FLOAT, \
+                                            Lazer FLOAT, Outros FLOAT, \
+                                            SUBTOTAL FLOAT NOT NULL DEFAULT 0)"
+        else: 
+            colunas_cp.pop(0); colunas_cp.pop(0); colunas_cp.pop(-1) # remover 'Dia', 'Etiqueta' e 'SUBTOTAL'
+            return f"CREATE TABLE {mes}{ano} (ID INT AUTO_INCREMENT PRIMARY KEY, \
+                                            Dia INT, Etiqueta VARCHAR(30) NOT NULL, \
+                                            {" FLOAT, ".join(colunas_cp) + " FLOAT, "} \
+                                            SUBTOTAL FLOAT NOT NULL DEFAULT 0)"
 
 
 def conectar():
@@ -93,10 +113,10 @@ def executareMostrar(cursor, query: str) -> None:
 
 def sincronizar(cursor):
     """
-    Sincroniza as databases do MySQL para o garracio.ini
+    Sincroniza as databases do MySQL para o garracio.json
     """
     dbs = []
-    with open("garracio.ini", "r") as f: conf = eval(f.readline())
+    with open("garracio.json", "r") as f: conf = j.load(f)
 
     dbb = executar(cursor, 'SHOW DATABASES')
     for _ in range(4): dbb.pop(-1) # Remove da lista as DB's que são do sistema
@@ -107,7 +127,7 @@ def sincronizar(cursor):
 
     conf['databases'] = dbs
 
-    with open("garracio.ini", "w") as f: f.write(str(conf))
+    with open("garracio.json", "w") as f: j.dump(conf, f, indent=4)
 
 def numeropraMes(mes: int):
     """

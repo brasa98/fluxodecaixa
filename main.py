@@ -1,5 +1,5 @@
-import os
 import connsql, backend
+import os, json as j
 from mysql.connector import ProgrammingError
 from random import randint
 from datetime import datetime
@@ -18,21 +18,21 @@ ano = d.strftime("%Y")[2:4]
 
 TAB = f"{mes}{ano}"
 
-COLUNAS_PADRAO = ["Etiqueta", "Educação", "Saúde", "Lazer", "Outros gastos"]
+COLUNAS_PADRAO = ["Etiqueta", "Educação", "Saúde", "Lazer", "Outros"]
 
-def resumoFeito(con, cursor, semCheck=False):
+def resumoFeito(con, cursor, conf, usuario, semCheck=False):
     """
     Verifica se o resumo mensal foi feito
     """
-    if semCheck or ((int(dia) >= 28 and int(dia) <= 31) and not conf['resumoMensalFeito']):
+
+    if semCheck or ((int(dia) >= 28 and int(dia) <= 31) and not conf[usuario]['config']['resumoMensalFeito']):
         opc = input("Deseja resumir seu mês? (s/n) ")
         if opc.lower() == 's':
-            print("Inicializando resumo do mês...")
             entra = float(input("Quanto você ganhou esse mês? R$"))
             cursor.execute(connsql.criarTabela(mes, ano, res=True))
             _ = connsql.executar(cursor, f"SELECT SUBTOTAL FROM {TAB}")
             sai = 0 
-            for i in _: #so Deus sabe o que esse for faz!
+            for i in _: #só Deus sabe o que esse for faz!
                 for j in i:
                     sai += j
             total = entra - sai #calcula o total com base nas entradas e saídas
@@ -41,7 +41,7 @@ def resumoFeito(con, cursor, semCheck=False):
             connsql.mostrarTabela(cursor, "*", f"{TAB}R")
             con.commit()
     
-            with open("garracio.ini", "w") as f: f.write(str(conf))
+            with open("garracio.json", "w") as f: j.dump(conf, f, indent=4)
         else: return False
     return True
 
@@ -53,8 +53,8 @@ def login(conf):
 
     os.system(CL)
     
-    print(f"Usuários disponíveis: {conf['databases']}")
-    usuario = input("Usuário: ").capitalize()
+    print(f"Usuários disponíveis: {", ".join(conf['databases'])}")
+    usuario = input("Login: ").capitalize()
 
     if usuario in conf['databases']: connsql.config['database'] = usuario #verifica se o usuário existe
     else: #criar usuário
@@ -62,7 +62,7 @@ def login(conf):
 
         if _.lower() == 's':
             conf['databases'].append(usuario)
-            with open('garracio.ini', 'w') as f: f.write(str(conf)) #registra o usuário no arquivo ini
+            with open('garracio.json', 'w') as f: j.dump(conf, f, indent=4) #registra o usuário no arquivo ini
 
             #cria o banco de dados do usuário
             connsql.config['database'] = usuario
@@ -84,11 +84,11 @@ def login(conf):
 
 def inicializar():
     #carrega o arquivo de configuração na variável 'conf'
-    with open("garracio.ini", "r") as f: conf = eval(f.readline())
+    with open("garracio.json", "r") as f: conf = j.load(f)
     usuario, con, cursor = login(conf)
-    conf['resumoMensalFeito'] = resumoFeito(con, cursor)
-    if dia == 1: conf['resumoMensalFeito'] = False
-    with open("garracio.ini", "w") as f: f.write(str(conf))
+    conf[usuario]['config']['resumoMensalFeito'] = resumoFeito(con, cursor, conf, usuario)
+    if dia == 1: conf[usuario]['config']['resumoMensalFeito'] = False
+    with open("garracio.json", "w") as f: j.dump(conf, f, indent=4)
 
     return conf, usuario, con, cursor
 
@@ -99,17 +99,24 @@ def receberColunas(cols=COLUNAS_PADRAO):
     valores = []
     
     for i in cols:
-        _ = input(f"{i} R$")
-        valores.append(_)
+        if i == "Etiqueta":
+            _ = input(f"Etiqueta: ")
+            valores.append(_)
+        elif i not in ["Dia", "SUBTOTAL"]:
+            _ = float(input(f"{i} R$"))
+            valores.append(_)
     return valores
- 
+
 def configurarColunas(conf, usuario):
     """
     Configura as colunas para um usuário específico
     """
     cols = ["Dia", "Etiqueta"]
 
-    cols_str = input("Digite as colunas em ordem, separadas por '; ': ")
+    print("\nColunas padrão: ", ["Dia"] + COLUNAS_PADRAO + ["SUBTOTAL"])
+    print("Colunas atuais: ", conf[usuario]['colunas'])
+
+    cols_str = input("\nDigite as colunas em ordem, separadas por '; '\n(não é necessário incluir 'Dia', 'Etiqueta' e 'SUBTOTAL'): ")
 
     cols_usuario = cols_str.split("; ")
 
@@ -119,11 +126,11 @@ def configurarColunas(conf, usuario):
         cols[i] = cols[i].capitalize()
     cols.append("SUBTOTAL") #'SUBTOTAL' obrigatório
 
-    conf[f'cols_{usuario}'] = cols
+    conf[usuario]['colunas'] = cols
 
-    print(conf[f'cols_{usuario}'])
+    print(conf[usuario]['colunas'])
 
-    with open("garracio.ini", "w") as f: f.write(str(conf))
+    with open("garracio.json", "w") as f: j.dump(conf, f, indent=4)
     return conf
  
 
@@ -131,7 +138,7 @@ def main(pular_execucao=False):
     """
     Função principal
     """
-    global dia, mes, ano, usuario, con, cursor
+    global dia, mes, ano, usuario, con, cursor, conf
     tipo_execucao = 1
 
     connsql.sincronizar(cursor)
@@ -155,26 +162,24 @@ def main(pular_execucao=False):
                     \n9-Sair\
                     \n\n=>"))
 
-        try: cursor.execute(connsql.criarTabela(mes, ano))
+        try: cursor.execute(connsql.criarTabela(mes, ano, colunas=conf[usuario]['colunas']))
         except ProgrammingError: pass
 
         match(_):
             case 1: # Adicionar gastos de hoje
                 colunas_str = ""
 
-                with open("garracio.ini", "r") as f: conf = eval(f.readline())
+                colunas_valores = receberColunas(cols=conf[usuario]['colunas']) #pega os VALUES
+                colunas_valores[0] = f"'{colunas_valores[0]}'" # só coloca o '' na etiqueta pra não dar erro
+                subtotal = sum(colunas_valores[1:]) #remove a coluna 'Etiqueta'
 
-                colunas = receberColunas(cols=conf[f'cols_{usuario}']) #pegar as colunas 
-                subtotal = sum(colunas[1:]) #remove a coluna 
+                colunas_valores = ", ".join(list(map(str, colunas_valores))) #transforma tudo em string
 
-                for col in colunas:
-                    colunas_str += f"{col}, "
-                colunas_str.rstrip(", ")
+                colunas_str = ", ".join(conf[usuario]['colunas']) #pega o nome das colunas pra colocar no INTO
 
-                # TODO: Adicionar a coluna "Etiqueta" em todas as queries
-                cursor.execute(f"INSERT INTO {TAB}\
-                                (Dia, {colunas_str}, SUBTOTAL)\
-                                VALUES ({dia}, {colunas_str}, {subtotal})")
+                query = f"INSERT INTO {TAB} ({colunas_str}) VALUES ({dia}, {colunas_valores}, {subtotal})"
+
+                cursor.execute(query)
                 connsql.mostrarTabela(cursor, "*", TAB)
                 con.commit()
             case 2: # Remover gastos de um dia
@@ -199,8 +204,9 @@ def main(pular_execucao=False):
                 _ = int(input(f"Selecione uma abaixo:\
                             \n1-Alterar data\
                             \n2-Realizar o resumo mensal\
-                            \n3-Mudar usuário\
-                            \n4-Configurar colunas para {usuario}\
+                            \n3-Configurar intervalo de dias para o resumo mensal\
+                            \n4-Mudar usuário\
+                            \n5-Configurar colunas para {usuario}\
                             \n\n=>"))
                 if _ == 1:
                     dia = input("Dia: ")
@@ -210,12 +216,14 @@ def main(pular_execucao=False):
                 elif _ == 2:
                     resumoFeito(semCheck=True)
                 elif _ == 3:
-                    with open("garracio.ini", "r") as f: conf = eval(f.readline())
+                    print("não implementado AINDA, vai trabalhar Lucas!")
+                elif _ == 4:
+                    with open("garracio.json", "r") as f: conf = j.load(f)
                     os.system(CL)
                     usuario, con, cursor = login(conf)
                     main(pular_execucao=True)
-                elif _ == 4:
-                    with open("garracio.ini", "r") as f: conf = eval(f.readline())
+                elif _ == 5:
+                    with open("garracio.json", "r") as f: conf = j.load(f)
                     configurarColunas(conf, usuario)
                     
     elif tipo_execucao == 2:

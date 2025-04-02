@@ -5,7 +5,11 @@
     ],
     "Lucas": {
         "config": {
-            "resumoMensalFeito": true
+            "resumoMensalFeito": true,
+            "rmMinMax": [
+                28,
+                31
+            ]
         },
         "colunas": [
             "Dia",
@@ -19,7 +23,11 @@
     },
     "Roseli": {
         "config": {
-            "resumoMensalFeito": true
+            "resumoMensalFeito": true,
+            "rmMinMax": [
+                28,
+                31
+            ]
         },
         "colunas": [
             "Dia",

@@ -90,7 +90,7 @@ Esse projeto foi feito para destacar a importância de gerenciar seus gastos, co
 
 - [X] Personalização das colunas das tabelas. (v2.5)
 
-- [ ] Configuração do intervalo de dias para fazer o resumo mensal.
+- [X] Configuração do intervalo de dias para fazer o resumo mensal.
 
 - [X] Separação das configurações por usuário. WIP (v2.5)
     > "Lucas": {"config": [], "colunas": []}

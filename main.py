@@ -20,12 +20,27 @@ TAB = f"{mes}{ano}"
 
 COLUNAS_PADRAO = ["Etiqueta", "Educação", "Saúde", "Lazer", "Outros"]
 
+def configurarRMminmax(conf, usuario):
+    """
+    Configura intervalo de dias (mínimo e máximo) para fazer o resumo mensal
+    """
+
+    min, max = input("\nDigite o intervalo de tempo em dias para fazer o resumo mensal.\
+                        \nFormato: min-max (incluindo os dois): ").split("-")
+    
+    conf[usuario]['config']['rmMinMax'] = [int(min), int(max)]
+
+    with open("garracio.json", "w") as f: j.dump(conf, f, indent=4)
+
 def resumoFeito(con, cursor, conf, usuario, semCheck=False):
     """
     Verifica se o resumo mensal foi feito
     """
 
-    if semCheck or ((int(dia) >= 28 and int(dia) <= 31) and not conf[usuario]['config']['resumoMensalFeito']):
+    if semCheck or (( int(dia) >=conf[usuario]['config']['rmMinMax'][0] and 
+                      int(dia) <= conf[usuario]['config']['rmMinMax'][1] )
+                      and not conf[usuario]['config']['resumoMensalFeito']):
+        
         opc = input("Deseja resumir seu mês? (s/n) ")
         if opc.lower() == 's':
             entra = float(input("Quanto você ganhou esse mês? R$"))
@@ -62,7 +77,8 @@ def login(conf):
 
         if _.lower() == 's':
             conf['databases'].append(usuario)
-            with open('garracio.json', 'w') as f: j.dump(conf, f, indent=4) #registra o usuário no arquivo ini
+            conf[usuario]['config']['rmMinMax'] = [28, 31]
+            with open('garracio.json', 'w') as f: j.dump(conf, f, indent=4) #registra o usuário no arquivo json
 
             #cria o banco de dados do usuário
             connsql.config['database'] = usuario
@@ -128,7 +144,6 @@ def configurarColunas(conf, usuario):
 
     conf[usuario]['colunas'] = cols
 
-    print(conf[usuario]['colunas'])
 
     with open("garracio.json", "w") as f: j.dump(conf, f, indent=4)
     return conf
@@ -216,7 +231,7 @@ def main(pular_execucao=False):
                 elif _ == 2:
                     resumoFeito(semCheck=True)
                 elif _ == 3:
-                    print("não implementado AINDA, vai trabalhar Lucas!")
+                    configurarRMminmax(conf, usuario)
                 elif _ == 4:
                     with open("garracio.json", "r") as f: conf = j.load(f)
                     os.system(CL)
@@ -225,6 +240,7 @@ def main(pular_execucao=False):
                 elif _ == 5:
                     with open("garracio.json", "r") as f: conf = j.load(f)
                     configurarColunas(conf, usuario)
+                    connsql.reconstruirTabela(cursor, conf, usuario, mes, ano)
                     
     elif tipo_execucao == 2:
         backend.iniciar(host="brasa.onthewifi.com", usuario=usuario)

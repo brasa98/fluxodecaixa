@@ -77,11 +77,28 @@ def login(conf):
 
         if _.lower() == 's':
             conf['databases'].append(usuario)
-            conf[usuario]['config']['rmMinMax'] = [28, 31]
+            conf[usuario] = {
+                "config": {
+                    "resumoMensalFeito": True,
+                    "rmMinMax": [
+                        28,
+                        31
+                    ]
+                },
+                "colunas": [
+                    "Dia",
+                    "Etiqueta",
+                    "Educação",
+                    "Saúde",
+                    "Lazer",
+                    "Outros",
+                    "SUBTOTAL"
+                ]
+            }
             with open('garracio.json', 'w') as f: j.dump(conf, f, indent=4) #registra o usuário no arquivo json
 
             #cria o banco de dados do usuário
-            connsql.config['database'] = usuario
+            connsql.config['database'] = "ADM"
             con, cursor = connsql.conectar()
             cursor.execute(f"CREATE DATABASE {usuario}")
 

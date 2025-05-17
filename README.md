@@ -95,5 +95,6 @@ Esse projeto foi feito para destacar a importância de gerenciar seus gastos, co
 - [X] Separação das configurações por usuário. WIP (v2.5)
     > "Lucas": {"config": [], "colunas": []}
 
-- [ ] Adicionar login com senha por usuário, tanto headless quanto na web.
-    > Acho melhor usar a senha da database como senha única ao invés de uma por usuário
+- [ ] Adicionar login com senha por usuário, tanto headless quanto na web. EXP (v2.5.1)
+    > ~~Acho melhor usar a senha da database como senha única ao invés de uma por usuário~~
+    > Adicionei uma senha-mestra global no `garracio.json`

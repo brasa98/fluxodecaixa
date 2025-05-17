@@ -11,6 +11,9 @@
 <a id="introducao"></a>
 Esse projeto foi feito para destacar a importância de gerenciar seus gastos, com uma interface intuitiva e acesso remoto, priorizo a **facilidade e simplicidade**.
 
+#### (Maio/2025)
+- A partir desse mês, estarei utilizando do *Design Sprint* modelo Google, para que consiga organizar minhas ideias e focar em um grande objetivo por semana, consequentemente tendo um foco maior e disponibilizando atualizações periódicas para o Garracio.
+
 ###### Feito por Lucas de Morais Fracaro (2023)
 
 ### Gerenciador de despesas com:

@@ -1,5 +1,4 @@
 .gitignore
 __pycache__/
-Makefile
-sprint/D*-*
-bak/
+__pycache__/*
+funcs.bak

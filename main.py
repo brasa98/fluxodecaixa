@@ -1,8 +1,10 @@
+from sys import exception
 import connsql, backend
-import os, json as j
+import os, hashlib, json as j
 from mysql.connector import ProgrammingError
-from random import randint
 from datetime import datetime
+from getpass4 import getpass
+
 # Verifica o SO e define o comando de limpar a tela
 if os.name == 'nt': CL = "cls"
 else: CL = "clear"
@@ -19,6 +21,12 @@ ano = d.strftime("%Y")[2:4]
 TAB = f"{mes}{ano}"
 
 COLUNAS_PADRAO = ["Etiqueta", "Educação", "Saúde", "Lazer", "Outros"]
+
+def configurarSenhaMestra(conf: dict):
+    senhaMestra = getpass("Qual será a nova senha mestra? ").encode()
+    with open('garracio.json', 'w') as f:
+        conf['senhaMestra'] = hashlib.sha256(senhaMestra).hexdigest()
+        j.dump(conf, f, indent=4)
 
 def configurarRMminmax(conf, usuario):
     """
@@ -71,7 +79,18 @@ def login(conf):
     print(f"Usuários disponíveis: {", ".join(conf['databases'])}")
     usuario = input("Login: ").capitalize()
 
-    if usuario in conf['databases']: connsql.config['database'] = usuario #verifica se o usuário existe
+    if usuario in conf['databases']:
+        connsql.config['database'] = usuario #verifica se o usuário existe
+        while True: #checa a senha
+            _ = getpass("Senha-Mestra: ")
+            if _ == " ": print("Abortar!"); exit()
+            if hashlib.sha256(_.encode()).hexdigest() == conf['senhaMestra']:
+                print("Login realizado!\n\n")
+                break
+            else:
+                print("Senha incorreta.")
+                continue
+
     else: #criar usuário
         _ = input("Usuário não encontrado!\nDeseja criá-lo (s/n)? ")
 
@@ -238,7 +257,8 @@ def main(pular_execucao=False):
                             \n2-Realizar o resumo mensal\
                             \n3-Configurar intervalo de dias para o resumo mensal\
                             \n4-Mudar usuário\
-                            \n5-Configurar colunas para {usuario}\
+                            \n5-Alterar Senha-Mestra\
+                            \n6-Configurar colunas para {usuario}\
                             \n\n=>"))
                 if _ == 1:
                     dia = input("Dia: ")
@@ -246,7 +266,7 @@ def main(pular_execucao=False):
                     ano = input("Ano: ")[2:4]
                     main(pular_execucao=True)
                 elif _ == 2:
-                    resumoFeito(semCheck=True)
+                    resumoFeito(con, cursor, conf, usuario, semCheck=True)
                 elif _ == 3:
                     configurarRMminmax(conf, usuario)
                 elif _ == 4:
@@ -255,6 +275,8 @@ def main(pular_execucao=False):
                     usuario, con, cursor = login(conf)
                     main(pular_execucao=True)
                 elif _ == 5:
+                    configurarSenhaMestra(conf)
+                elif _ == 6:
                     with open("garracio.json", "r") as f: conf = j.load(f)
                     configurarColunas(conf, usuario)
                     connsql.reconstruirTabela(cursor, conf, usuario, mes, ano)

@@ -29,3 +29,5 @@ query="GRANT SELECT, INSERT, CREATE, DELETE, DROP, SHOW DATABASES, UPDATE ON *.*
 sudo docker exec -it GarracioDB mysql -uroot -p"$ROOT_PASSWORD" -e "$query"
 
 echo '{"senhaMestra": "", "usuarios": []}' > garracio.json
+
+pip install -r requirements.txt

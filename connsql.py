@@ -1,17 +1,26 @@
 import mysql.connector as mysqlc
 from prettytable import PrettyTable as pt
 import json as j
+from dotenv import dotenv_values
+from termcolor import colored
+
+ENV = dotenv_values(".env")
 
 MESES = ["Janeiro", "Fevereiro", "Marco", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"]
 COLUNAS_PADRAO = ["Etiqueta", "Educação", "Saúde", "Lazer", "Outros"]
+EXCECOES = ("mysql", "sys", "information_schema", "performance_schema", "virobase", "AMPS", "ADM", "python", "main.py", "-cli", "-web")
 
-config = {
-    'user': 'Garracio',
-    'password': 'garracio',
-    'host': 'brasa.onthewifi.com',
-    'database': 'ADM',
-    'raise_on_warnings': True,
-}
+try:
+    config = {
+        'user': ENV['USER'],
+        'password': ENV['PASSWORD'],
+        'host': ENV['HOST'],
+        'database': 'ADM',
+        'raise_on_warnings': True,
+    }
+except KeyError:
+    print(colored("Você não definiu as variáveis de ambiente!\nInclua-as no '.env' ou execute o 'setup.sh'", "white", "on_red"))
+    exit()
 
 def criarTabela(mes, ano, colunas=COLUNAS_PADRAO, res=False):
     """
@@ -45,26 +54,27 @@ def reconstruirTabela(cursor, conf, usuario, mes, ano):
     """
     tabela = f"{mes}{ano}"
     mostrarTabela(cursor, "*", tabela)
-    _ = input( "\nSalve os dados dessa tabela! \
-                \n\nExcluir tabela e reconstruir com as colunas novas?? \
-                \nOBS: É recomendado fazer isso no dia 1 do mês\n\n(s/n) =>")
+    _ = input( colored("\nSalve os dados dessa tabela!", "white", "on_red") +
+                "\n\n🔄 Excluir tabela e reconstruir com as colunas novas?? \
+                \nOBS: É recomendado fazer isso no dia 1 do mês‼️\n\n(s/n) =>")
     if _.lower() == 's':
         executar(cursor, f"DROP TABLE {tabela}")
         executar(cursor, criarTabela(mes, ano, conf[usuario]['colunas']))
-        print(f"Tabela '{tabela}' recriada com sucesso!")
+        print(f"✅ Tabela '{tabela}' recriada com sucesso!")
     else:
         conf[usuario]['colunas'] = COLUNAS_PADRAO
         with open("garracio.json", "w") as f: j.dump(conf, f, indent=4)
-        print("Atualização de colunas cancelada!\nAbortar missão!")
+        print("❌ Atualização de colunas cancelada!\nAbortar missão!")
 
 def conectar():
     """
     Realiza a conexão ao MySQL com base no dicionário de configuração 'config'
     """
+    mysqlc.connect
     try:
         conexao = mysqlc.connect(**config)
         if conexao.is_connected(): 
-            print(f"Conectado ao MySQL (host:{config['host']})\n\n")
+            print(f"🔗 Conectado ao MySQL (host:{config['host']})\n\n")
             cursor = conexao.cursor()
             
     except mysqlc.Error as err:
@@ -73,7 +83,7 @@ def conectar():
             config['host'] = "192.168.0.109"
             conexao = mysqlc.connect(**config)
             if conexao.is_connected():
-                print(f"Conectado ao MySQL (host:{config['host']})\n\n")
+                print(f"🔗 Conectado ao MySQL (host:{config['host']})\n\n")
                 cursor = conexao.cursor()
         except mysqlc.Error as err:
             print(f"Erro: {err}")
@@ -111,13 +121,14 @@ def executar(cursor, query: str):
     """
     Executa uma query MySQL
     """
+ 
     cursor.execute(query)
     resultados = cursor.fetchall()
     return resultados
 
 def executareMostrar(cursor, query: str) -> None:
     """
-    Executa uma query MySQL e exibe os resultados obtidos
+    Executa uma query no MySQL e exibe os resultados obtidos
     """
     cursor.execute(query)
     resultados = cursor.fetchall()
@@ -130,17 +141,17 @@ def executareMostrar(cursor, query: str) -> None:
 
 def sincronizar(cursor):
     """
-    Sincroniza as databases do MySQL para o garracio.json
+    Sincroniza os bancos de dados do MySQL para o garracio.json
     """
     dbs = []
     with open("garracio.json", "r") as f: conf = j.load(f)
 
     dbb = executar(cursor, 'SHOW DATABASES')
-    for _ in range(4): dbb.pop(-1) # Remove da lista as DB's que são do sistema
+    #for _ in range(4): dbb.pop(-1) # Remove da lista as DB's que são do sistema
 
     for tupl in dbb:
         for db in tupl:
-            if db != "AMPS" and db != "ADM": dbs.append(db) # Remove a DB do AMPS-Mais e ADM
+            if db not in EXCECOES: dbs.append(db) # Remove bancos de dados irrelevantes
 
     conf['databases'] = dbs
 

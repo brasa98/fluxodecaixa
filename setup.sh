@@ -1,17 +1,21 @@
 #!/bin/bash
 
-read -p "Digite o nome do banco de dados: " db_name
-read -p "Digite o nome do usuário: " user_name
-read -s -p "Digite a senha do usuário: " user_password
+read -p "✏️ Digite o nome do banco de dados: " BD
+read -p "✏️ Digite o nome do usuário: " USER
+
+read -s "🔗 Digite o host: " HOST
+read -s -p "🔒️ Digite a senha do usuário: " PASSWORD
 echo
-read -s -p "Digite a senha root: " root_password
+read -s -p "🔒️ Digite a senha root: " ROOT_PASSWORD
 echo
 
-sudo docker run -d --name fluxo_de_caixa \
-  -e MYSQL_DATABASE="$db_name" \
-  -e MYSQL_USER="$user_name" \
-  -e MYSQL_PASSWORD="$user_password" \
-  -e MYSQL_ROOT_PASSWORD="$root_password" \
+echo "USER=${USER}\nPASSWORD=${PASSWORD}\nHOST=${HOST}" >> .env
+
+sudo docker run -d --name GarracioDB \
+  -e MYSQL_DATABASE="$BD" \
+  -e MYSQL_USER="$USER" \
+  -e MYSQL_PASSWORD="$PASSWORD" \
+  -e MYSQL_ROOT_PASSWORD="$ROOT_PASSWORD" \
   -p 3306:3306 \
   -v my-db:/var/lib/mysql \
   --restart always \
@@ -20,6 +24,6 @@ sudo docker run -d --name fluxo_de_caixa \
 echo "Esperando 5 segundos..."
 sleep 5
 
-query="GRANT SELECT, INSERT, CREATE, DELETE, DROP, SHOW DATABASES, UPDATE ON *.* TO '$user_name'@'localhost';"
+query="GRANT SELECT, INSERT, CREATE, DELETE, DROP, SHOW DATABASES, UPDATE ON *.* TO '$USER'@'${HOST}';"
 
-sudo docker exec -it fluxo_de_caixa mysql -uroot -p"$root_password" -e "$query"
+sudo docker exec -it GarracioDB mysql -uroot -p"$ROOT_PASSWORD" -e "$query"

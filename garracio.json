@@ -1,6 +1,6 @@
 {
     "senhaMestra": "98847ab421559636a9139c4e20028628c006900e04ab36d48164bc4027fd919e",
-    "databases": [
+    "usuarios": [
         "Lucas",
         "Roseli",
         "Teste"
@@ -40,5 +40,10 @@
             "Outros",
             "SUBTOTAL"
         ]
-    }
+    },
+    "databases": [
+        "Lucas",
+        "Roseli",
+        "Teste"
+    ]
 }

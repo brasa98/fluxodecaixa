@@ -1,4 +1,8 @@
 .gitignore
 __pycache__/
 __pycache__/*
+sprint/
 funcs.bak
+start_docksql.sh
+stop_docksql.sh
+.env

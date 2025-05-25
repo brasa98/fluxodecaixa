@@ -98,3 +98,7 @@ Esse projeto foi feito para destacar a importância de gerenciar seus gastos, co
 - [ ] Adicionar login com senha por usuário, tanto headless quanto na web. EXP (v2.5.1)
     > ~~Acho melhor usar a senha da database como senha única ao invés de uma por usuário~~
     > Adicionei uma senha-mestra global no `garracio.json`
+
+- [ ] Melhorias na UI e UX (_User Interface, User Experience_). EXP (v2.5.5)
+    > Emojis e cores no terminal
+    > Junto com argumentos na CLI e varíaveis de ambiente '.env'

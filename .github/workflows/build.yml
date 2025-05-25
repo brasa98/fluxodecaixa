@@ -1,0 +1,82 @@
+name: Build Garracio
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Versão da release"
+        required: true
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.11
+
+      - name: Instalar dependências
+        run: |
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: Build executável Linux
+        run: |
+          pyinstaller --onefile --clean --name "garracio" \
+            --add-data="garracio.json:." \
+            --add-data="connsql.py:." \
+            --add-data="backend.py:." \
+            --add-data="templates:templates" \
+            --add-data="static:static" main.py
+
+      - name: Empacotar build Linux
+        run: |
+          zip "Garracio-v${{ github.event.inputs.version }}-linux.zip" dist/garracio setup.sh
+
+      - name: Salvar artefato Linux
+        uses: actions/upload-artifact@v4
+        with:
+          name: Garracio-Linux
+          path: |
+            Garracio-v${{ github.event.inputs.version }}-linux.zip
+
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.11
+
+      - name: Instalar dependências
+        run: |
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: Build executável Windows
+        shell: cmd
+        run: |
+          pyinstaller --onefile --clean --name "garracio.exe" ^
+            --add-data "garracio.json;." ^
+            --add-data "connsql.py;." ^
+            --add-data "backend.py;." ^
+            --add-data "templates;templates" ^
+            --add-data "static;static" main.py
+
+      - name: Empacotar build Windows
+        run: |
+          powershell Compress-Archive -Path dist/garracio.exe,setup.bat -DestinationPath "Garracio-v${{ github.event.inputs.version }}-windows.zip"
+
+      - name: Salvar artefato Windows
+        uses: actions/upload-artifact@v4
+        with:
+          name: Garracio-Windows
+          path: |
+            Garracio-v${{ github.event.inputs.version }}-windows.zip

@@ -244,7 +244,7 @@ def main(tipoExecucao=0):
     if tipoExecucao == 1:
         print(colored(f"📅 Data atual: {datetime.now().strftime('%d/%m/%Y')}", "white", "on_black"))
         print(colored(f"📅 Data simulada: {dia} de {mes}, {'20'+ano}\n", "black", "on_blue"))
-        _ = int(input(colored(f"👋 Olá {usuario}", "yellow")+", bem vindo ao "+colored("Garracio", "black", "on_green")+"!\n\nO que deseja fazer hoje❓️\
+        opc = int(input(colored(f"👋 Olá {usuario}", "yellow")+", bem vindo ao "+colored("Garracio", "black", "on_green")+"!\n\nO que deseja fazer hoje❓️\
                     \n1-➕ Adicionar gastos de hoje\
                     \n2-➖ Remover os gastos de um dia\
                     \n3-🔎 Consultar um dia\
@@ -257,7 +257,7 @@ def main(tipoExecucao=0):
         try: cursor.execute(connsql.criarTabela(mes, ano, colunas=conf[usuario]['colunas']))
         except ProgrammingError: pass
 
-        match(_):
+        match(opc):
             case 1: # Adicionar gastos de hoje
                 adicionarGastos(con, cursor, conf)
             case 2: # Remover gastos de um dia

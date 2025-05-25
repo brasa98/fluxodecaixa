@@ -1,6 +1,6 @@
 import mysql.connector as mysqlc
 from prettytable import PrettyTable as pt
-import json as j
+import json as j, sys
 from dotenv import dotenv_values
 from termcolor import colored
 
@@ -20,7 +20,7 @@ try:
     }
 except KeyError:
     print(colored("Você não definiu as variáveis de ambiente!\nInclua-as no '.env' ou execute o 'setup.sh'", "white", "on_red"))
-    exit()
+    sys.exit()
 
 def criarTabela(mes, ano, colunas=COLUNAS_PADRAO, res=False):
     """
@@ -45,7 +45,7 @@ def criarTabela(mes, ano, colunas=COLUNAS_PADRAO, res=False):
             colunas_cp.pop(0); colunas_cp.pop(0); colunas_cp.pop(-1) # remover 'Dia', 'Etiqueta' e 'SUBTOTAL'
             return f"CREATE TABLE {mes}{ano} (ID INT AUTO_INCREMENT PRIMARY KEY, \
                                             Dia INT, Etiqueta VARCHAR(30) NOT NULL, \
-                                            {" FLOAT, ".join(colunas_cp) + " FLOAT, "} \
+                                            {', '.join(col + ' FLOAT' for col in colunas_cp)}, \
                                             SUBTOTAL FLOAT NOT NULL DEFAULT 0)"
         
 def reconstruirTabela(cursor, conf, usuario, mes, ano):

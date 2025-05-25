@@ -6,3 +6,5 @@ flask
 waitress
 json
 getpass4
+termcolor
+python-dotenv

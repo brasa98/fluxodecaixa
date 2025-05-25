@@ -69,19 +69,22 @@ def resumoFeito(con, cursor, conf, usuario, semCheck=False):
     Verifica se o resumo mensal foi feito
     """
 
-    if semCheck or (( int(dia) >=conf[usuario]['config']['rmMinMax'][0] and 
+    if semCheck or (( int(dia) >=conf[usuario]['config']['rmMinMax'][0] and #verifica o intervalo de dias por usuário
                       int(dia) <= conf[usuario]['config']['rmMinMax'][1] )
                       and not conf[usuario]['config']['resumoMensalFeito']):
         
-        opc = input("📝 Deseja resumir seu mês? (s/n) ")
+        opc = input("\n📝 Deseja resumir seu mês? (s/n) ")
         if opc.lower() == 's':
             entra = float(input("💵 Quanto você ganhou esse mês? R$"))
-            cursor.execute(connsql.criarTabela(mes, ano, res=True))
+            
+            try: cursor.execute(connsql.criarTabela(mes, ano, res=True))
+            except ProgrammingError: pass
+
             _ = connsql.executar(cursor, f"SELECT SUBTOTAL FROM {TAB}")
             sai = 0 
             for i in _: #só Deus sabe o que esse for faz!
-                for j in i:
-                    sai += j
+                for k in i:
+                    sai += k
             total = entra - sai #calcula o total com base nas entradas e saídas
 
             cursor.execute(f"INSERT INTO {TAB}R VALUES ({entra}, {sai}, {total})")
@@ -93,7 +96,7 @@ def resumoFeito(con, cursor, conf, usuario, semCheck=False):
     return True
 
 
-def login(conf, usuario="arg"):
+def login(conf: dict, usuario="arg"):
     """
     Lógica de login e criação de usuários para o Garracio
     """
@@ -101,20 +104,23 @@ def login(conf, usuario="arg"):
     os.system(CL)
     
     if usuario == "arg":
-        print(f"🧑 Usuários disponíveis: {", ".join(conf['usuarios'])}")
+        usuarios = ", ".join(conf['usuarios']) if conf['usuarios'] != [] else colored("Não há usuários cadastrados!", "white", "on_red")
+        print(f"🧑 Usuários disponíveis: {usuarios}")
         usuario = input("🧑 Login: ").capitalize()
 
     if usuario in conf['usuarios']:
         connsql.config['database'] = usuario #verifica se o usuário existe
         while True: #checa a senha
-            _ = getpass("🔒️ Senha-Mestra: ")
-            if _ == " ": print(colored("Abortar‼️", "red")); exit()
-            if hashlib.sha256(_.encode()).hexdigest() == conf['senhaMestra']:
-                print("🔓️ Login realizado!\n\n")
-                break
-            else:
-                print("❌ Senha incorreta.")
-                continue
+            if conf['senhaMestra']:
+                _ = getpass("🔒️ Senha-Mestra: ")
+                if _ == " ": print(colored("Abortar‼️", "red")); exit()
+                if hashlib.sha256(_.encode()).hexdigest() == conf['senhaMestra']:
+                    print("🔓️ Login realizado!\n\n")
+                    break
+                else:
+                    print("❌ Senha incorreta.")
+                    continue
+            else: configurarSenhaMestra(conf)
 
     else: #criar usuário
         _ = input("🤔 Usuário não encontrado!\nDeseja criá-lo (s/n)? ")

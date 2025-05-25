@@ -157,3 +157,15 @@ pushDev:
 	git commit -m "${mensagem}"; \
 	gt push origin dev
 
+criarRelease:
+	@bash -c '\
+	read -p "📝 Nome da versão: " nomeVersao; \
+	read -p "🖥️ Plataforma: " plataforma; \
+	if [ "$$plataforma" = "linux" ]; then \
+		pyinstaller --onefile --clean --name "garracio" --add-data="garracio.json:." --add-data="templates:templates" --add-data="static:static" main.py; \
+		zip "Garracio-v$$nomeVersao-$$plataforma.zip" dist/garracio setup.sh; \
+	else \
+		pyinstaller --onefile --clean --name "garracio.exe" --add-data="garracio.json:." --add-data="templates:templates" --add-data="static:static" main.py; \
+		zip "Garracio-v$$nomeVersao-$$plataforma.zip" dist/garracio.exe setup.bat; \
+	fi'
+

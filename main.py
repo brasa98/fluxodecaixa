@@ -156,10 +156,10 @@ def login(conf: dict, usuario="arg"):
 
             os.system(CL)
             print("🔄 Reinicie o programa para aplicar as alterações!")
-            quit()
+            sys.exit()
         elif _.lower() == 'n':
             print(colored("Abortar missão!", "red"))
-            quit()
+            sys.exit()
 
     con, cursor = connsql.conectar()
 
@@ -276,7 +276,7 @@ def main(tipoExecucao=0):
                 connsql.mostrarTabela(cursor, "*", t)
             case 9: # Sair
                 print(f"\n👋 Tchau, {usuario}.\n"+colored("Não se esqueça de mim!!", "black", "on_red"))
-                quit()
+                sys.exit()
             case 0: # Opções
                 os.system(CL)
                 _ = int(input(f"⚙️ Selecione uma configuração:\n\
@@ -313,6 +313,14 @@ def main(tipoExecucao=0):
 
 
 if __name__ == "__main__":
+    if any(arg in sys.argv for arg in ["--help", "-h", "help", "?"]): #mensagem de ajuda 
+        print(sys.argv)
+        print("Uso: [ARGS] usuario\n\nARGS:\
+        \n\t-cli: Executar interface em linha de comando \
+        \n\n\t-web: Executar interface na web (EXPERIMENTAL!) \
+        \n\nusuario: Nome do usuário (inicial maiúscula) para login\n")
+        sys.exit() 
+
     conf, usuario, con, cursor = inicializar(usuario=sys.argv[-1]) if sys.argv[-1] not in connsql.EXCECOES else inicializar()
     if "-web" in sys.argv:
         main(tipoExecucao=2)

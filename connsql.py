@@ -8,7 +8,7 @@ ENV = dotenv_values(".env")
 
 MESES = ["Janeiro", "Fevereiro", "Marco", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"]
 COLUNAS_PADRAO = ["Etiqueta", "Educação", "Saúde", "Lazer", "Outros"]
-EXCECOES = ("mysql", "sys", "information_schema", "performance_schema", "virobase", "AMPS", "ADM", "python", "main.py", "-cli", "-web")
+EXCECOES = ("mysql", "sys", "information_schema", "performance_schema", "virobase", "AMPS", "ADM", "python", "main.py", "garracio", "-cli", "-web", "--help", "-h", "help", "?")
 
 try:
     config = {

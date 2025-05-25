@@ -27,3 +27,5 @@ sleep 5
 query="GRANT SELECT, INSERT, CREATE, DELETE, DROP, SHOW DATABASES, UPDATE ON *.* TO '$USER'@'${HOST}';"
 
 sudo docker exec -it GarracioDB mysql -uroot -p"$ROOT_PASSWORD" -e "$query"
+
+echo '{"senhaMestra": "", "usuarios": []}' > garracio.json

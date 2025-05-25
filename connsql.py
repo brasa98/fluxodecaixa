@@ -96,8 +96,8 @@ def mostrarTabela(cursor, vals, table, ordenar=True):
     Mostra os valores escolhidos de uma tabela.
     """
     if ordenar:
-        if vals != "*": cursor.execute(f"SELECT ({vals}) FROM {table} ORDER BY Dia ASC")
-        else: cursor.execute(f"SELECT {vals} FROM {table} ORDER BY Dia ASC")
+        if vals != "*": cursor.execute(f"SELECT ({vals}) FROM {table} ORDER BY Dia ASC") #se houver valores específicos pra procurar
+        else: cursor.execute(f"SELECT {vals} FROM {table} ORDER BY Dia ASC") #se for '*' (todos)
     else:
         if vals != "*": cursor.execute(f"SELECT ({vals}) FROM {table}")
         else: cursor.execute(f"SELECT {vals} FROM {table}")

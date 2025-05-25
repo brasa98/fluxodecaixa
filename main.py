@@ -85,7 +85,7 @@ def resumoFeito(con, cursor, conf, usuario, semCheck=False):
             total = entra - sai #calcula o total com base nas entradas e saídas
 
             cursor.execute(f"INSERT INTO {TAB}R VALUES ({entra}, {sai}, {total})")
-            connsql.mostrarTabela(cursor, "*", f"{TAB}R")
+            connsql.mostrarTabela(cursor, "*", f"{TAB}R", ordenar=False)
             con.commit()
     
             with open("garracio.json", "w") as f: j.dump(conf, f, indent=4)

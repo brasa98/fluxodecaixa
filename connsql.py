@@ -91,12 +91,16 @@ def conectar():
     
     return conexao, cursor
 
-def mostrarTabela(cursor, vals, table):
+def mostrarTabela(cursor, vals, table, ordenar=True):
     """
     Mostra os valores escolhidos de uma tabela.
     """
-    if vals != "*": cursor.execute(f"SELECT ({vals}) FROM {table} ORDER BY Dia ASC")
-    else: cursor.execute(f"SELECT {vals} FROM {table} ORDER BY Dia ASC")
+    if ordenar:
+        if vals != "*": cursor.execute(f"SELECT ({vals}) FROM {table} ORDER BY Dia ASC")
+        else: cursor.execute(f"SELECT {vals} FROM {table} ORDER BY Dia ASC")
+    else:
+        if vals != "*": cursor.execute(f"SELECT ({vals}) FROM {table}")
+        else: cursor.execute(f"SELECT {vals} FROM {table}")
 
     resultados = cursor.fetchall()    
     _ = pt()

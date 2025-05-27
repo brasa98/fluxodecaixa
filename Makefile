@@ -153,9 +153,8 @@ versaoNova:
 pushDev:
 	@read -p "📝 Nomeie o commit: " mensagem; \
 	git checkout dev; \
-	git add .; \
-	git commit -m "${mensagem}"; \
-	gt push origin dev
+	git commit -m "$${mensagem}"; \
+	git push origin dev
 
 criarRelease:
 	@bash -c '\

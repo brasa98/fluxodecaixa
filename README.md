@@ -99,6 +99,10 @@ Esse projeto foi feito para destacar a importância de gerenciar seus gastos, co
     > ~~Acho melhor usar a senha da database como senha única ao invés de uma por usuário~~
     > Adicionei uma senha-mestra global no `garracio.json`
 
-- [ ] Melhorias na UI e UX (_User Interface, User Experience_). EXP (v2.5.5)
+- [X] Melhorias na UI e UX (_User Interface, User Experience_). EXP (v2.5.5)
     > Emojis e cores no terminal
     > Junto com argumentos na CLI e varíaveis de ambiente '.env'
+
+- [ ] Colorir Entradas de green e Saídas de red
+
+- [ ] Salário (automaticamente adicionar no resumo mensal)

@@ -26,6 +26,8 @@ limpar:
 instalar:
 	pip install -r requirements.txt
 
+verTODOS:
+	@cat README.md | grep -E '^\s*-\s\[\s\]'
 
 # === Etapas do Sprint ===
 
@@ -168,3 +170,28 @@ criarRelease:
 		zip "Garracio-v$$nomeVersao-$$plataforma.zip" dist/garracio.exe setup.bat; \
 	fi'
 
+REPO := olucasfracaro/Garracio
+WORKFLOW := build.yml
+BRANCH := dev
+
+buildRelease:
+	@if [ -z "$(description)" ]; then \
+		echo "❌ Você deve fornecer a descrição da release: make buildRelease description=\"vX.Y.Z\""; \
+		exit 1; \
+	fi
+	@echo "🚀 Disparando workflow '$(WORKFLOW)' na branch '$(BRANCH)' com descrição: '$(description)'..."
+	@gh workflow run $(WORKFLOW) --repo $(REPO) --ref $(BRANCH) --field description="$(description)"
+
+buildStatus:
+	@echo "🔍 Verificando status do último workflow dispatch na branch '$(BRANCH)'..."
+	@gh run list --repo $(REPO) --branch $(BRANCH) --limit 1
+
+baixarArtefatos:
+	@echo "📦 Baixando artefatos da última execução da branch '$(BRANCH)'..."
+	@LAST_RUN_ID=$$(gh run list --repo $(REPO) --branch $(BRANCH) --limit 1 --json databaseId -q '.[0].databaseId'); \
+	if [ -z "$$LAST_RUN_ID" ]; then \
+		echo "❌ Nenhuma run encontrada."; \
+		exit 1; \
+	fi; \
+	gh run download $$LAST_RUN_ID --repo $(REPO) --dir artRelease
+	@echo "✅ Artefatos salvos na pasta ./artRelease"

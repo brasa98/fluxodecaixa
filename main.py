@@ -12,21 +12,16 @@ else: CL = "clear"
 
 d = datetime.now()
 dia = d.strftime("%d")
-## dia = randint(1,28)
-## dia = 3
 mes = connsql.numeropraMes(int(d.strftime("%m")))
-## mes = "Trezembro"
 ano = d.strftime("%Y")[2:4]
-## ano = "99"
-
-TAB = f"{mes}{ano}"
 
 COLUNAS_PADRAO = ["Etiqueta", "Educação", "Saúde", "Lazer", "Outros"]
 
-def adicionarGastos(con, cursor, conf):
+def adicionarGastos(con, cursor, conf, usuario, dia, mes, ano): # Adicionado dia, mes, ano
     """
     Adicionar os gastos do dia simulado
     """
+    TAB = f"{mes}{ano}" # Definido localmente
     colunasStr = ""
 
     colunasValores = receberColunas(cols=conf[usuario]['colunas']) #pega os VALUES
@@ -57,17 +52,18 @@ def configurarRMminmax(conf, usuario):
     Configura intervalo de dias (mínimo e máximo) para fazer o resumo mensal
     """
 
-    min, max = input("\n⚙️ Digite o intervalo de tempo em dias para fazer o resumo mensal.\
+    minDia, maxDia = input("\n⚙️ Digite o intervalo de tempo em dias para fazer o resumo mensal.\
                         \nFormato: min-max (incluindo os dois): ").split("-")
     
-    conf[usuario]['config']['rmMinMax'] = [int(min), int(max)]
+    conf[usuario]['config']['rmMinMax'] = [int(minDia), int(maxDia)]
 
     with open("garracio.json", "w") as f: j.dump(conf, f, indent=4)
 
-def resumoFeito(con, cursor, conf, usuario, semCheck=False):
+def resumoFeito(con, cursor, conf, usuario, dia, mes, ano, semCheck=False): # Adicionado dia, mes, ano
     """
     Verifica se o resumo mensal foi feito
     """
+    TAB = f"{mes}{ano}" # Definido localmente
 
     if semCheck or (( int(dia) >=conf[usuario]['config']['rmMinMax'][0] and #verifica o intervalo de dias por usuário
                       int(dia) <= conf[usuario]['config']['rmMinMax'][1] )
@@ -81,7 +77,7 @@ def resumoFeito(con, cursor, conf, usuario, semCheck=False):
             except ProgrammingError: pass
 
             _ = connsql.executar(cursor, f"SELECT SUBTOTAL FROM {TAB}")
-            sai = 0 
+            sai = 0
             for i in _: #só Deus sabe o que esse for faz!
                 for k in i:
                     sai += k
@@ -92,14 +88,17 @@ def resumoFeito(con, cursor, conf, usuario, semCheck=False):
             con.commit()
     
             with open("garracio.json", "w") as f: j.dump(conf, f, indent=4)
+            return True # Retorna True se o resumo foi feito
         else: return False
-    return True
+    return True # Retorna True se não era dia de fazer o resumo ou semCheck era True e o usuário não quis
 
 
 def login(conf: dict, usuario="arg"):
     """
     Lógica de login e criação de usuários para o Garracio
+    usuario="arg": Se for "arg", perguntar o usuário, se não, apenas pedir a senha
     """
+    global dia
 
     os.system(CL)
     
@@ -113,9 +112,9 @@ def login(conf: dict, usuario="arg"):
         while True: #checa a senha
             if conf['senhaMestra']:
                 _ = getpass("🔒️ Senha-Mestra: ")
-                if _ == " ": print(colored("Abortar‼️", "red")); exit()
+                if _ == "": print(colored("Abortar‼️", "red")); sys.exit()
                 if hashlib.sha256(_.encode()).hexdigest() == conf['senhaMestra']:
-                    print("🔓️ Login realizado!\n\n")
+                    print("🔓️ Login realizado!\n")
                     break
                 else:
                     print("❌ Senha incorreta.")
@@ -123,7 +122,7 @@ def login(conf: dict, usuario="arg"):
             else: configurarSenhaMestra(conf)
 
     else: #criar usuário
-        _ = input("🤔 Usuário não encontrado!\nDeseja criá-lo (s/n)? ")
+        _ = input("🤔 Usuário não encontrado!\n➕ Deseja criá-lo (s/n)? ")
 
         if _.lower() == 's':
             conf['usuarios'].append(usuario)
@@ -154,29 +153,40 @@ def login(conf: dict, usuario="arg"):
 
             configurarColunas(conf, usuario)
 
+            con, cursor = None, None 
+            opcoes(conf, usuario, con, cursor, dia, mes, ano)
+            
             os.system(CL)
-            print("🔄 Reinicie o programa para aplicar as alterações!")
-            sys.exit()
+            print(colored("🔄 Reinicie o programa para aplicar as alterações!", "black", "on_green"))
         elif _.lower() == 'n':
             print(colored("Abortar missão!", "red"))
-            sys.exit()
+        sys.exit()
 
-    con, cursor = connsql.conectar()
+    try: con, cursor = connsql.conectar()
+    except:
+        print(colored("Erro ao conectar ao banco de dados!", "black", "on_red"))
+        print(colored("O MySQL está sendo executado?", "black", "on_light_blue"))
+        sys.exit()
 
     return usuario, con, cursor
 
-def inicializar(usuario="arg"):
+def inicializar(usuario_arg="arg"): # Renomeado para evitar conflito
     """
     Inicializa as configurações, usuário e verifica se é dia de RM
     """
     #carrega o arquivo de configuração na variável 'conf'
     with open("garracio.json", "r") as f: conf = j.load(f)
-    usuario, con, cursor = login(conf, usuario=usuario)
-    conf[usuario]['config']['resumoMensalFeito'] = resumoFeito(con, cursor, conf, usuario)
-    if dia == 1: conf[usuario]['config']['resumoMensalFeito'] = False
+    usuario, con, cursor = login(conf, usuario=usuario_arg)
+    
+
+    # Atualiza o estado do resumo mensal
+    conf[usuario]['config']['resumoMensalFeito'] = resumoFeito(con, cursor, conf, usuario, dia, mes, ano)
+    if dia == "01": # Use string para comparar com strftime
+        conf[usuario]['config']['resumoMensalFeito'] = False
     with open("garracio.json", "w") as f: j.dump(conf, f, indent=4)
 
-    return conf, usuario, con, cursor
+    return conf, usuario, con, cursor, dia, mes, ano # Retorna todos os valores
+
 
 def receberColunas(cols=COLUNAS_PADRAO):
     """
@@ -207,7 +217,7 @@ def configurarColunas(conf, usuario):
     colsAtuaisPT.field_names = conf[usuario]['colunas']
 
     print(colored("\nColunas padrão: \n", "white", "on_grey"), colsPadraoPT)
-    print(colored("Colunas atuais: ", "black", "on_white"), colsAtuaisPT)
+    print(colored("Colunas atuais: \n", "black", "on_white"), colsAtuaisPT)
 
     cols_str = input("\nDigite as colunas " + colored("em ordem, separadas por '; '", "red") +
                      "\n(não é necessário incluir 'Dia', 'Etiqueta' e 'SUBTOTAL'): ")
@@ -226,13 +236,49 @@ def configurarColunas(conf, usuario):
     with open("garracio.json", "w") as f: j.dump(conf, f, indent=4)
     return conf
  
+def opcoes(conf: dict, usuario: str, con, cursor, dia: str, mes: str, ano: str):
+    _ = int(input(f"\n⚙️ Selecione uma configuração:\n\
+                \n1-📅 Alterar data\
+                \n2-📆 Realizar o resumo mensal\
+                \n3-⌛️ Configurar intervalo de dias para o resumo mensal\
+                \n4-🧑 Mudar usuário\
+                \n5-🔑 Alterar Senha-Mestra\
+                \n6-📑 Configurar colunas para {usuario}\
+                \n\n=>"))
 
-def main(tipoExecucao=0):
+    if _ == 1:
+        print("📅 Formato: dd/mm/aaaa")
+        diaNovo = input("📅 Dia: ")
+        mesNovo = connsql.numeropraMes(int(input("📅 Mês: ")))
+        anoNovo = input("📅 Ano: ")[2:4]
+        # Retorna os novos valores para quem chamou (main)
+        return conf, usuario, con, cursor, diaNovo, mesNovo, anoNovo, True # O último True indica que a data foi alterada
+    elif _ == 2:
+        if not (con or cursor): print(colored("🔄 Reinicie para acessar essa configuração!", "black", "on_green")); sys.exit()
+        resumoFeito(con, cursor, conf, usuario, dia, mes, ano, semCheck=True)
+    elif _ == 3:
+        configurarRMminmax(conf, usuario)
+    elif _ == 4:
+        return None, None, None, None, None, None, None, False, True # Último True para indicar que o usuário mudou
+    elif _ == 5:
+        configurarSenhaMestra(conf)
+    elif _ == 6:
+        with open("garracio.json", "r") as f: conf = j.load(f)
+        configurarColunas(conf, usuario)
+        connsql.reconstruirTabela(cursor, conf, usuario, mes, ano)
+    
+    return conf, usuario, con, cursor, dia, mes, ano, False, False # Retorna os valores originais e False para indicar que a data não foi alterada
+
+
+def main(conf, usuario, con, cursor, dia, mes, ano, tipoExecucao=0): # Todos os valores são passados como argumento
     """
     Função principal
+    tipoExecucao:
+        - Perguntar (0)
+        - CLI (1)
+        - Web (2)
     """
-    global dia, mes, ano, usuario, con, cursor, conf
-
+    
     connsql.sincronizar(cursor)
 
     if tipoExecucao == 0:
@@ -242,9 +288,11 @@ def main(tipoExecucao=0):
                                 \n\n=>"))
     
     if tipoExecucao == 1:
+        TAB = f"{mes}{ano}"
+        print(colored(f"👋 Olá {usuario}", "yellow") + ", bem vindo ao " + colored("Garracio", "black", "on_green")+"!")
         print(colored(f"📅 Data atual: {datetime.now().strftime('%d/%m/%Y')}", "white", "on_black"))
         print(colored(f"📅 Data simulada: {dia} de {mes}, {'20'+ano}\n", "black", "on_blue"))
-        opc = int(input(colored(f"👋 Olá {usuario}", "yellow")+", bem vindo ao "+colored("Garracio", "black", "on_green")+"!\n\nO que deseja fazer hoje❓️\
+        opc = int(input("\n\nO que deseja fazer hoje❓️\n \
                     \n1-➕ Adicionar gastos de hoje\
                     \n2-➖ Remover os gastos de um dia\
                     \n3-🔎 Consultar um dia\
@@ -254,20 +302,21 @@ def main(tipoExecucao=0):
                     \n9-⬅️ Sair\
                     \n\n=>"))
 
+        #tenta criar a tabela do mês caso não exista
         try: cursor.execute(connsql.criarTabela(mes, ano, colunas=conf[usuario]['colunas']))
         except ProgrammingError: pass
 
         match(opc):
             case 1: # Adicionar gastos de hoje
-                adicionarGastos(con, cursor, conf)
+                adicionarGastos(con, cursor, conf, usuario, dia, mes, ano)
             case 2: # Remover gastos de um dia
                 connsql.mostrarTabela(cursor, "*", TAB)
-                id = input("✏️ Digite o ID da linha que você quer remover: ")
-                cursor.execute(f"DELETE FROM {TAB} WHERE ID={id}")
+                id_remover = input("✏️ Digite o ID da linha que você quer remover: ")
+                cursor.execute(f"DELETE FROM {TAB} WHERE ID={id_remover}")
                 con.commit()
             case 3: # Consultar dia
-                d = int(input("📅 Qual dia você deseja ver? "))
-                connsql.executareMostrar(cursor, f"SELECT * FROM {TAB} WHERE Dia={d} ORDER BY Dia ASC")
+                d_consultar = int(input("📅 Qual dia você deseja ver? "))
+                connsql.executareMostrar(cursor, f"SELECT * FROM {TAB} WHERE Dia={d_consultar} ORDER BY Dia ASC")
             case 4: # Ver mês
                 connsql.mostrarTabela(cursor, "*", TAB)
             case 5: # Ver outra tabela
@@ -278,41 +327,20 @@ def main(tipoExecucao=0):
                 print(f"\n👋 Tchau, {usuario}.\n"+colored("Não se esqueça de mim!!", "black", "on_red"))
                 sys.exit()
             case 0: # Opções
+                # A função opcoes agora retorna os valores, e main os atualiza
                 os.system(CL)
-                _ = int(input(f"⚙️ Selecione uma configuração:\n\
-                            \n1-📅 Alterar data\
-                            \n2-📆 Realizar o resumo mensal\
-                            \n3-⌛️ Configurar intervalo de dias para o resumo mensal\
-                            \n4-🧑 Mudar usuário\
-                            \n5-🔑 Alterar Senha-Mestra\
-                            \n6-📑 Configurar colunas para {usuario}\
-                            \n\n=>"))
-                if _ == 1:
-                    dia = input("📅 Dia: ")
-                    mes = connsql.numeropraMes(int(input("📅 Mês: ")))
-                    ano = input("📅 Ano: ")[2:4]
-                    main(tipoExecucao=1)
-                elif _ == 2:
-                    resumoFeito(con, cursor, conf, usuario, semCheck=True)
-                elif _ == 3:
-                    configurarRMminmax(conf, usuario)
-                elif _ == 4:
-                    with open("garracio.json", "r") as f: conf = j.load(f)
-                    os.system(CL)
-                    usuario, con, cursor = login(conf)
-                    main(tipoExecucao=1)
-                elif _ == 5:
-                    configurarSenhaMestra(conf)
-                elif _ == 6:
-                    with open("garracio.json", "r") as f: conf = j.load(f)
-                    configurarColunas(conf, usuario)
-                    connsql.reconstruirTabela(cursor, conf, usuario, mes, ano)
-                    
+                conf, usuario, con, cursor, dia, mes, ano, dataAlterada, usuarioMudou = opcoes(conf, usuario, con, cursor, dia, mes, ano)
+                if dataAlterada or usuarioMudou:
+                    if usuarioMudou:
+                        conf, usuario, con, cursor, dia, mes, ano = inicializar(usuario_arg="arg") 
+                    main(conf, usuario, con, cursor, dia, mes, ano, tipoExecucao=tipoExecucao)
+
     elif tipoExecucao == 2:
-        backend.iniciar(host="brasa.onthewifi.com", usuario=usuario)
+            backend.iniciar(host="brasa.onthewifi.com", usuario=usuario)
 
 
 if __name__ == "__main__":
+    # Inicialização inicial para obter todos os dados
     if any(arg in sys.argv for arg in ["--help", "-h", "help", "?"]): #mensagem de ajuda 
         print(sys.argv)
         print("Uso: [ARGS] usuario\n\nARGS:\
@@ -321,10 +349,16 @@ if __name__ == "__main__":
         \n\nusuario: Nome do usuário (inicial maiúscula) para login\n")
         sys.exit() 
 
-    conf, usuario, con, cursor = inicializar(usuario=sys.argv[-1]) if sys.argv[-1] not in connsql.EXCECOES else inicializar()
-    if "-web" in sys.argv:
-        main(tipoExecucao=2)
-    elif "-cli" in sys.argv:
-        main(tipoExecucao=1)
+    # Determina o usuário a partir dos argumentos ou usa a inicialização padrão
+    if sys.argv[-1] not in connsql.EXCECOES:
+        conf, usuario, con, cursor, dia, mes, ano = inicializar(usuario_arg=sys.argv[-1].capitalize())
     else:
-        main()
+        conf, usuario, con, cursor, dia, mes, ano = inicializar()
+
+    # Passa as variáveis para a função main
+    if "-web" in sys.argv:
+        main(conf, usuario, con, cursor, dia, mes, ano, tipoExecucao=2)
+    elif "-cli" in sys.argv:
+        main(conf, usuario, con, cursor, dia, mes, ano, tipoExecucao=1)
+    else:
+        main(conf, usuario, con, cursor, dia, mes, ano)

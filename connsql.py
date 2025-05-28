@@ -56,7 +56,7 @@ def reconstruirTabela(cursor, conf, usuario, mes, ano):
     mostrarTabela(cursor, "*", tabela)
     _ = input( colored("\nSalve os dados dessa tabela!", "white", "on_red") +
                 "\n\n🔄 Excluir tabela e reconstruir com as colunas novas?? \
-                \nOBS: É recomendado fazer isso no dia 1 do mês‼️\n\n(s/n) =>")
+                \nOBS: É recomendado fazer isso no dia 1 do mês‼️\n\n(s/n) => ")
     if _.lower() == 's':
         executar(cursor, f"DROP TABLE {tabela}")
         executar(cursor, criarTabela(mes, ano, conf[usuario]['colunas']))
@@ -64,13 +64,13 @@ def reconstruirTabela(cursor, conf, usuario, mes, ano):
     else:
         conf[usuario]['colunas'] = COLUNAS_PADRAO
         with open("garracio.json", "w") as f: j.dump(conf, f, indent=4)
-        print("❌ Atualização de colunas cancelada!\nAbortar missão!")
+        print("❌ Atualização de colunas cancelada!")
+        print(colored("Abortar missão!", "red"))
 
 def conectar():
     """
     Realiza a conexão ao MySQL com base no dicionário de configuração 'config'
     """
-    mysqlc.connect
     try:
         conexao = mysqlc.connect(**config)
         if conexao.is_connected(): 
@@ -78,22 +78,15 @@ def conectar():
             cursor = conexao.cursor()
             
     except mysqlc.Error as err:
-        try:
-            # Testa o outro host caso tenha dado errado
-            config['host'] = "192.168.0.109"
-            conexao = mysqlc.connect(**config)
-            if conexao.is_connected():
-                print(f"🔗 Conectado ao MySQL (host:{config['host']})\n\n")
-                cursor = conexao.cursor()
-        except mysqlc.Error as err:
-            print(f"Erro: {err}")
-            return err
+        """print(f"Erro: {err}")"""
+        return err
     
     return conexao, cursor
 
 def mostrarTabela(cursor, vals, table, ordenar=True):
     """
     Mostra os valores escolhidos de uma tabela.
+    ordenar=True: Ordenar a tabela com base no 'Dia' Crescente ou não
     """
     if ordenar:
         if vals != "*": cursor.execute(f"SELECT ({vals}) FROM {table} ORDER BY Dia ASC") #se houver valores específicos pra procurar
@@ -157,14 +150,15 @@ def sincronizar(cursor):
         for db in tupl:
             if db not in EXCECOES: dbs.append(db) # Remove bancos de dados irrelevantes
 
-    conf['databases'] = dbs
+    conf['usuarios'] = dbs
 
     with open("garracio.json", "w") as f: j.dump(conf, f, indent=4)
 
-def numeropraMes(mes: int):
+def numeropraMes(mes: int) -> str:
     """
     Converte o número do mês para o nome do mês em si
     """
     for i in range(1,13):
         if mes == i:
             return MESES[i-1]
+    return ""

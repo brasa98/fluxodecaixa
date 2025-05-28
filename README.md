@@ -68,8 +68,9 @@ Esse projeto foi feito para destacar a importância de gerenciar seus gastos, co
 - [X] Adicionado um arquivo de configuração (garracio.json)
 	> Principalmente para saber se já foi revisado o mês
 
-- [ ] Criar uma DB por ano?
-	> talvez... não
+- [X] Criar uma DB por ano?
+	> talvez... não, melhor não.
+    > Decidido q a DB é por usuário
 
 - [X] |ID; DIA; *GASTOS FIXOS*; SUBTOTAL| (mensal)
 	> Gastos fixos: "Educação Saúde Lazer e Outros"

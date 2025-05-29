@@ -1,5 +1,5 @@
 import mysql.connector as mysqlc
-from prettytable import PrettyTable as pt
+from prettytable import PrettyTable as pt, from_db_cursor
 import json as j, sys
 from dotenv import dotenv_values
 from termcolor import colored
@@ -22,7 +22,7 @@ except KeyError:
     print(colored("Você não definiu as variáveis de ambiente!\nInclua-as no '.env' ou execute o 'setup.sh'", "white", "on_red"))
     sys.exit()
 
-def criarTabela(mes, ano, colunas=COLUNAS_PADRAO, res=False):
+def criarTabela(mes, ano, colunas=COLUNAS_PADRAO, res=False) -> str:
     """
     Cria uma tabela com base no mês e ano.
     res=False: Indica se a tabela será de resumo ou não
@@ -48,7 +48,7 @@ def criarTabela(mes, ano, colunas=COLUNAS_PADRAO, res=False):
                                             {', '.join(col + ' FLOAT' for col in colunas_cp)}, \
                                             SUBTOTAL FLOAT NOT NULL DEFAULT 0)"
         
-def reconstruirTabela(cursor, conf, usuario, mes, ano):
+def reconstruirTabela(cursor, conf: dict, usuario: str, mes, ano):
     """
     Recria a tabela com as colunas novas
     """
@@ -78,41 +78,88 @@ def conectar():
             cursor = conexao.cursor()
             
     except mysqlc.Error as err:
-        """print(f"Erro: {err}")"""
-        return err
+        try:
+            config['host'] = "localhost"
+            conexao = mysqlc.connect(**config)
+            if conexao.is_connected():
+                print(f"🔗 Conectado ao MySQL (host:{config['host']})\n\n")
+                cursor = conexao.cursor()
+
+        except mysqlc.Error as err:
+            """print(f"Erro: {err}")"""
+            return err
     
     return conexao, cursor
 
-def mostrarTabela(cursor, vals, table, ordenar=True):
-    """
-    Mostra os valores escolhidos de uma tabela.
-    ordenar=True: Ordenar a tabela com base no 'Dia' Crescente ou não
-    """
+from prettytable import PrettyTable as pt
+from termcolor import colored
+
+def mostrarTabela(cursor, vals, tabela, ordenar=True):
+    from prettytable import PrettyTable as pt
+    from termcolor import colored
+
     if ordenar:
-        if vals != "*": cursor.execute(f"SELECT ({vals}) FROM {table} ORDER BY Dia ASC") #se houver valores específicos pra procurar
-        else: cursor.execute(f"SELECT {vals} FROM {table} ORDER BY Dia ASC") #se for '*' (todos)
+        query = f"SELECT {vals} FROM {tabela} ORDER BY Dia ASC"
     else:
-        if vals != "*": cursor.execute(f"SELECT ({vals}) FROM {table}")
-        else: cursor.execute(f"SELECT {vals} FROM {table}")
+        query = f"SELECT {vals} FROM {tabela}"
+    cursor.execute(query)
 
-    resultados = cursor.fetchall()    
-    _ = pt()
-    _.field_names = [i[0] for i in cursor.description]
+    resultados = cursor.fetchall()
+    campos = [desc[0] for desc in cursor.description]
+
+    tabelaPretty = pt()
+    tabelaPretty.field_names = campos
+
     for linha in resultados:
-        _.add_row(linha)
-    print(_)
+        linhaColorida = list(linha)
+        if "R" in tabela:
+            for i, campo in enumerate(campos):
+                if campo == "Entradas":
+                    linhaColorida[i] = colored(str(linha[i]), "green")
+                elif campo == "Saidas":
+                    linhaColorida[i] = colored(str(linha[i]), "red")
+                elif campo == "TOTAL":
+                    linhaColorida[i] = colored(str(linha[i]), "blue")
+        tabelaPretty.add_row(linhaColorida)
 
-def mostrarTabelas(cursor):
+    # Gera string da tabela
+    tabelaStr = tabelaPretty.get_string()
+
+    # Substitui nomes das colunas por versões coloridas
+    if "R" in tabela:
+        tabelaStr = tabelaStr.replace("Entradas", colored("Entradas", "black", "on_green"))
+        tabelaStr = tabelaStr.replace("Saidas", colored("Saidas", "black", "on_red"))
+        tabelaStr = tabelaStr.replace("TOTAL", colored("TOTAL", "black", "on_blue"))
+
+    print(tabelaStr)
+    
+
+def mostrarTabelas(cursor, enumerarId=False):
     """
     Mostra as tabelas disponíveis para visualização
     """
-    tbs = pt(["Tabelas"])
     cursor.execute("SHOW TABLES")
+    _ = []
 
-    for nome_tabela in cursor:
-        tbs.add_row(nome_tabela)
+    if enumerarId:
+        tbs = pt(["id", "Tabelas"])
+        for nomeTabela in cursor.fetchall(): _.append(nomeTabela[0])
 
-    print(tbs)
+        #adiciona um índice pra cada tabela
+        tabelasEnum = {i: tabela for i, tabela in enumerate(_, start=1)}
+        tbs.add_rows(tuple(tabelasEnum.items()))
+        print(tbs)
+        return tabelasEnum
+        
+    else:
+        tbs = pt(["Tabelas"])
+
+        for nomeTabela in cursor:
+            print(nomeTabela)
+            tbs.add_row(nomeTabela)
+
+        print(tbs)
+        return {}
 
 def executar(cursor, query: str):
     """
@@ -144,7 +191,6 @@ def sincronizar(cursor):
     with open("garracio.json", "r") as f: conf = j.load(f)
 
     dbb = executar(cursor, 'SHOW DATABASES')
-    #for _ in range(4): dbb.pop(-1) # Remove da lista as DB's que são do sistema
 
     for tupl in dbb:
         for db in tupl:
@@ -162,3 +208,9 @@ def numeropraMes(mes: int) -> str:
         if mes == i:
             return MESES[i-1]
     return ""
+
+if __name__ == "__main__":
+    config['database'] = "Teste"
+    conexao, cursor = conectar()
+    mostrarTabela(cursor, "*", "Maio25R", ordenar=False)
+    mostrarTabelas(cursor, enumerarId=True)

@@ -62,18 +62,18 @@ Esse projeto foi feito para destacar a importância de gerenciar seus gastos, co
 - [X] Adicionar uma tabela para o ano inteiro mostrando o resumo dos meses anteriores. (v1.7)
 
 - [X] Quanto ganhou (fim de mês). EXP (v1.7)
-	> Tabela separada, NOME=MesAnoR
+	> Tabela separada, NOME=MesAnoR  
 	> Colunas: Entradas/Saídas/TOTAL
 
 - [X] Adicionado um arquivo de configuração (garracio.json)
 	> Principalmente para saber se já foi revisado o mês
 
 - [X] Criar uma DB por ano?
-	> talvez... não, melhor não.
+	> talvez... não, melhor não.  
     > Decidido q a DB é por usuário
 
 - [X] |ID; DIA; *GASTOS FIXOS*; SUBTOTAL| (mensal)
-	> Gastos fixos: "Educação Saúde Lazer e Outros"
+	> Gastos fixos: Educação Saúde Lazer e Outros  
     > OUUUU, com a nova atualização v2.5, colunas personalizadas!
 
 - [X] Adicionado o gerenciamento de usuários. (v2.0)
@@ -93,7 +93,7 @@ Esse projeto foi feito para destacar a importância de gerenciar seus gastos, co
 
 - [X] Configuração do intervalo de dias para fazer o resumo mensal.
 
-- [X] Separação das configurações por usuário. WIP (v2.5)
+- [X] Separação das configurações por usuário. (v2.5)
     > "Lucas": {"config": [], "colunas": []}
 
 - [ ] Adicionar login com senha por usuário, tanto headless quanto na web. EXP (v2.5.1)
@@ -101,9 +101,19 @@ Esse projeto foi feito para destacar a importância de gerenciar seus gastos, co
     > Adicionei uma senha-mestra global no `garracio.json`
 
 - [X] Melhorias na UI e UX (_User Interface, User Experience_). EXP (v2.5.5)
-    > Emojis e cores no terminal
+    > Emojis e cores no terminal  
     > Junto com argumentos na CLI e varíaveis de ambiente '.env'
 
 - [ ] Colorir Entradas de green e Saídas de red
+    > Metade feito, falta algumas ainda
 
-- [ ] Salário (automaticamente adicionar no resumo mensal)
+- [X] Salário (automaticamente adicionar no resumo mensal)
+    > Adicionada a rendaFixa para realizar o resumo mensal automaticamente.  
+    > O usuário tem a opção de definir uma renda fixa ou continuar no formato antigo
+
+- [ ] Despesas fixas (pro resumo mensal)
+
+- [ ] Mover o `garracio.json` para uma tabela no MySQL?
+    > Ou deixá-lo mais _seguro/secreto_
+
+- [ ] Reescrever funções do `connsql.py` para usar `from_db_cursor()`

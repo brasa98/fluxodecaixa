@@ -38,14 +38,25 @@ def adicionarGastos(con, cursor, conf, usuario, dia, mes, ano): # Adicionado dia
     connsql.mostrarTabela(cursor, "*", TAB)
     con.commit()
 
+def configurarRendaFixa(conf: dict, usuario):
+    """
+    Configura a renda fixa (salários, mesadas, etc.) e automaticamente adiciona ao resumo mensal (desativando-o)
+    """
+    rendaFixa: float = float(input("\n💳️ Defina uma "+colored("renda fixa", "black", "on_green")+" (Exemplo: salário) R$"))
+    conf[usuario]['config']['rendaFixa'] = rendaFixa
+
+    with open('garracio.json', 'w') as f: j.dump(conf, f, indent=4)
+    return
+
 def configurarSenhaMestra(conf: dict):
     """
     Configurar a senha-mestra global a ser utilizada
     """
-    senhaMestra = getpass("Qual será a nova senha mestra? ").encode()
+    senhaMestra = getpass("\n🔑 Qual será a nova senha mestra? ").encode()
     with open('garracio.json', 'w') as f:
         conf['senhaMestra'] = hashlib.sha256(senhaMestra).hexdigest()
         j.dump(conf, f, indent=4)
+    return
 
 def configurarRMminmax(conf, usuario):
     """
@@ -58,38 +69,73 @@ def configurarRMminmax(conf, usuario):
     conf[usuario]['config']['rmMinMax'] = [int(minDia), int(maxDia)]
 
     with open("garracio.json", "w") as f: j.dump(conf, f, indent=4)
+    return
 
-def resumoFeito(con, cursor, conf, usuario, dia, mes, ano, semCheck=False): # Adicionado dia, mes, ano
+def resumoFeito(con, cursor, conf, usuario, dia, mes, ano, semCheck=False):
     """
     Verifica se o resumo mensal foi feito
+    semCheck=False: Se a função vai fazer os 'checks' do intervalo de dias e se o resumo mensal foi feito
     """
     TAB = f"{mes}{ano}" # Definido localmente
+    saidas = 0
+    rendaFixa = conf[usuario]['config']['rendaFixa']
 
-    if semCheck or (( int(dia) >=conf[usuario]['config']['rmMinMax'][0] and #verifica o intervalo de dias por usuário
-                      int(dia) <= conf[usuario]['config']['rmMinMax'][1] )
-                      and not conf[usuario]['config']['resumoMensalFeito']):
+    if semCheck:
+        taNoIntervalo = True
+        resumoMensalFeito = False
+    else:
+        taNoIntervalo: bool = (int(dia) >= conf[usuario]['config']['rmMinMax'][0] and
+                               int(dia) <= conf[usuario]['config']['rmMinMax'][1])
+
+        resumoMensalFeito = conf[usuario]['config']['resumoMensalFeito']
+
+    if taNoIntervalo and not resumoMensalFeito and rendaFixa > 0: #caso o usuário receba salário e tenha configurado nas opções
+        try: cursor.execute(connsql.criarTabela(mes, ano, res=True))
+        except ProgrammingError: pass
+
+        subtotais = connsql.executar(cursor, f"SELECT SUBTOTAL FROM {TAB}")
+        for subtotal in subtotais[0]: saidas += subtotal
+        total = rendaFixa - saidas
+
+        cursor.execute(f"INSERT INTO {TAB}R VALUES ({rendaFixa}, {saidas}, {total})")
+    
+        print(colored("\n✅ Resumo mensal feito automaticamente!", "black", "on_green"))
+        connsql.mostrarTabela(cursor, "*", f"{TAB}R", ordenar=False)
+        print(colored("\nOBS: Para desativar a automação, defina sua renda fixa nas opções para 0.\n\n", "black", "on_light_blue"))
+
+        con.commit()
+        return True
+
+    elif taNoIntervalo and not resumoMensalFeito and rendaFixa == 0:
         
         opc = input("\n📝 Deseja resumir seu mês? (s/n) ")
         if opc.lower() == 's':
             entra = float(input("💵 Quanto você ganhou esse mês? R$"))
-            
+        
+            #caso a tabela já exista
             try: cursor.execute(connsql.criarTabela(mes, ano, res=True))
             except ProgrammingError: pass
 
-            _ = connsql.executar(cursor, f"SELECT SUBTOTAL FROM {TAB}")
-            sai = 0
-            for i in _: #só Deus sabe o que esse for faz!
-                for k in i:
-                    sai += k
-            total = entra - sai #calcula o total com base nas entradas e saídas
+            subtotal = connsql.executar(cursor, f"SELECT SUBTOTAL FROM {TAB}")
+            
+            #descobri o que o 'for' faz, mas deixei assim pq achei engraçado kkkkkkk
+            #a variável 'subtotal' = [(subtotal,)] então os dois 'for' são pra entrar na lista e tupla respectivamente
+            #e pegar o valor subtotal de cada dia lá de dentro kkkkkkkkkkkkkkkkkk. então da pra remover o primeiro 'for' e
+            #só colocar subtotal[0], que no caso é o primeiro "nível": []
 
-            cursor.execute(f"INSERT INTO {TAB}R VALUES ({entra}, {sai}, {total})")
+            for i in subtotal: #só Deus sabe o que esse for faz!
+                for k in i:
+                    saidas += k
+            total = entra - saidas #calcula o total com base nas entradas e saídas
+
+            cursor.execute(f"INSERT INTO {TAB}R VALUES ({entra}, {saidas}, {total})")
             connsql.mostrarTabela(cursor, "*", f"{TAB}R", ordenar=False)
             con.commit()
     
-            with open("garracio.json", "w") as f: j.dump(conf, f, indent=4)
             return True # Retorna True se o resumo foi feito
-        else: return False
+        else: return False #se o usuário não quiser
+
+
     return True # Retorna True se não era dia de fazer o resumo ou semCheck era True e o usuário não quis
 
 
@@ -132,7 +178,8 @@ def login(conf: dict, usuario="arg"):
                     "rmMinMax": [
                         28,
                         31
-                    ]
+                    ],
+                    "rendaFixa": 0.0
                 },
                 "colunas": [
                     "Dia",
@@ -181,8 +228,7 @@ def inicializar(usuario_arg="arg"): # Renomeado para evitar conflito
 
     # Atualiza o estado do resumo mensal
     conf[usuario]['config']['resumoMensalFeito'] = resumoFeito(con, cursor, conf, usuario, dia, mes, ano)
-    if dia == "01": # Use string para comparar com strftime
-        conf[usuario]['config']['resumoMensalFeito'] = False
+    if dia == "01": conf[usuario]['config']['resumoMensalFeito'] = False
     with open("garracio.json", "w") as f: j.dump(conf, f, indent=4)
 
     return conf, usuario, con, cursor, dia, mes, ano # Retorna todos os valores
@@ -240,10 +286,11 @@ def opcoes(conf: dict, usuario: str, con, cursor, dia: str, mes: str, ano: str):
     _ = int(input(f"\n⚙️ Selecione uma configuração:\n\
                 \n1-📅 Alterar data\
                 \n2-📆 Realizar o resumo mensal\
-                \n3-⌛️ Configurar intervalo de dias para o resumo mensal\
-                \n4-🧑 Mudar usuário\
-                \n5-🔑 Alterar Senha-Mestra\
-                \n6-📑 Configurar colunas para {usuario}\
+                \n3-💳️ Configurar renda fixa\
+                \n4-⌛️ Configurar intervalo de dias para o resumo mensal\
+                \n5-🧑 Mudar usuário\
+                \n6-🔑 Alterar Senha-Mestra\
+                \n7-📑 Configurar colunas para {usuario}\
                 \n\n=>"))
 
     if _ == 1:
@@ -257,12 +304,14 @@ def opcoes(conf: dict, usuario: str, con, cursor, dia: str, mes: str, ano: str):
         if not (con or cursor): print(colored("🔄 Reinicie para acessar essa configuração!", "black", "on_green")); sys.exit()
         resumoFeito(con, cursor, conf, usuario, dia, mes, ano, semCheck=True)
     elif _ == 3:
-        configurarRMminmax(conf, usuario)
+        configurarRendaFixa(conf, usuario)
     elif _ == 4:
-        return None, None, None, None, None, None, None, False, True # Último True para indicar que o usuário mudou
+        configurarRMminmax(conf, usuario)
     elif _ == 5:
-        configurarSenhaMestra(conf)
+        return None, None, None, None, None, None, None, False, True # Último True para indicar que o usuário mudou
     elif _ == 6:
+        configurarSenhaMestra(conf)
+    elif _ == 7:
         with open("garracio.json", "r") as f: conf = j.load(f)
         configurarColunas(conf, usuario)
         connsql.reconstruirTabela(cursor, conf, usuario, mes, ano)
@@ -315,14 +364,18 @@ def main(conf, usuario, con, cursor, dia, mes, ano, tipoExecucao=0): # Todos os 
                 cursor.execute(f"DELETE FROM {TAB} WHERE ID={id_remover}")
                 con.commit()
             case 3: # Consultar dia
-                d_consultar = int(input("📅 Qual dia você deseja ver? "))
+                connsql.executareMostrar(cursor, f"SELECT Dia FROM {TAB} ORDER BY Dia ASC")
+                d_consultar = int(input("\n📅 Qual dia você deseja ver? "))
                 connsql.executareMostrar(cursor, f"SELECT * FROM {TAB} WHERE Dia={d_consultar} ORDER BY Dia ASC")
             case 4: # Ver mês
                 connsql.mostrarTabela(cursor, "*", TAB)
             case 5: # Ver outra tabela
-                connsql.mostrarTabelas(cursor)
-                t = input("✏️ Digite o nome da tabela: ")
-                connsql.mostrarTabela(cursor, "*", t)
+                tabelasEnum = connsql.mostrarTabelas(cursor, enumerarId=True)
+                id = int(input("✏️ Digite o 'id' da tabela: "))
+                tabela = tabelasEnum[id]
+
+                if not "R" in tabela: connsql.mostrarTabela(cursor, "*", tabela)
+                else: connsql.mostrarTabela(cursor, "*", tabela, ordenar=False)
             case 9: # Sair
                 print(f"\n👋 Tchau, {usuario}.\n"+colored("Não se esqueça de mim!!", "black", "on_red"))
                 sys.exit()

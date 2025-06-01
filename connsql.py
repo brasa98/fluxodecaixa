@@ -141,6 +141,7 @@ def mostrarTabelas(cursor, enumerarId=False):
 
         #adiciona um índice pra cada tabela
         tabelasEnum = {i: tabela for i, tabela in enumerate(_, start=1)}
+        print(tabelasEnum)
         tbs.add_rows(tuple(tabelasEnum.items()))
         print(tbs)
         return tabelasEnum
@@ -206,6 +207,6 @@ def numeropraMes(mes: int) -> str:
 if __name__ == "__main__":
     config['database'] = "Teste"
     conexao, cursor = conectar()
-    print(executar(cursor, f"SELECT Etiqueta FROM Maio25 WHERE Etiqueta='Teste, obvio 2' OR Etiqueta='dia dez'"))
-    mostrarTabela(cursor, "*", "Maio25", ordenar=True)
-    #mostrarTabelas(cursor, enumerarId=True)
+    #print(executar(cursor, f"SELECT Etiqueta FROM Maio25 WHERE Etiqueta='Teste, obvio 2' OR Etiqueta='dia dez'"))
+    #mostrarTabela(cursor, "*", "Maio25", ordenar=True)
+    mostrarTabelas(cursor, enumerarId=True)

@@ -17,7 +17,7 @@ ano: str = d.strftime("%Y")[2:4]
 
 TAB = f"{mes}{ano}"
 
-def adicionarGastos(con, cursor, conf: dict, usuario: str, dia: str, mes: str, ano: str): # Adicionado dia, mes, ano
+def adicionarGastos(con, cursor, conf: dict, usuario: str, dia: str):
     """
     Adicionar os gastos do dia simulado
     """
@@ -118,6 +118,7 @@ def configurarDespesasFixas(conf: dict, usuario: str):
     for etiqueta, info in despesasFixas.items():
         pt.add_row([c, etiqueta, info[0], info[1]])
         idEtiqueta[c] = etiqueta
+        c += 1
 
     print(pt)
     opc = int(input("\n⚙️ Escolha uma opção:\n \
@@ -481,7 +482,7 @@ def main(conf, usuario, con, cursor, dia, mes, ano, tipoExecucao=0): # Todos os 
 
         match(opc):
             case 1: # Adicionar gastos de hoje
-                adicionarGastos(con, cursor, conf, usuario, dia, mes, ano)
+                adicionarGastos(con, cursor, conf, usuario, dia)
             case 2: # Remover gastos de um dia
                 connsql.mostrarTabela(cursor, "*", TAB)
                 id_remover = input("✏️ Digite o ID da linha que você quer remover: ")

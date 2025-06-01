@@ -85,7 +85,7 @@ def verificarDespesasFixas(cursor, con, conf: dict, usuario: str):
         cursor.execute(query)
         con.commit()
 
-        print(f'✅ Despesas fixas ({', '.join(praInserir)}) debitadas com sucesso!\n\n')
+        print(f"✅ Despesas fixas ({', '.join(praInserir)}) debitadas com sucesso!\n\n")
 
 def configurarDespesasFixas(conf: dict, usuario: str):
     """

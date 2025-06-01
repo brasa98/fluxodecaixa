@@ -3,6 +3,7 @@ __pycache__/
 __pycache__/*
 sprint/
 garracio.json
+garracio.bak
 start_docksql.sh
 stop_docksql.sh
 .env

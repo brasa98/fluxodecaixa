@@ -5,12 +5,22 @@
     ],
     "Teste": {
         "config": {
-            "resumoMensalFeito": true,
+            "resumoMensalFeito": false,
             "rmMinMax": [
                 28,
                 31
             ],
-            "rendaFixa": 1.0
+            "rendaFixa": 1.0,
+            "despesasFixas": {
+                "Teste, obvio 2": [
+                    27,
+                    3.14159265359
+                ],
+                "Dia 1 teste": [
+                    1,
+                    1.0
+                ]
+            }
         },
         "colunas": [
             "Dia",

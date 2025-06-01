@@ -1,4 +1,4 @@
-# Garracio: Gastos racionais e controlados
+# Garracio: **Ga**stos **racio**nais e controlados
 
 ## Sumário
 - [Introdução](#introducao)
@@ -25,12 +25,14 @@ Esse projeto foi feito para destacar a importância de gerenciar seus gastos, co
 ### Requisitos:
 - **Python** versão 3.11+
 - **MySQL** versão 8.2+
-- **SO: *Linux***
-    - Opcional, não foi testado em Windows.
+    - **OBS: Usar _docker_ é opcional**
+- **Sistema Operacional**
+    - Linux (_recomendado_)
+    - Windows 10+ (_experimental_)
 
 ### Versões finais
 <a id="instalacao-releases"></a>
-- Instale o arquivo *.zip* da versão desejada na seção [releases](https://github.com/olucasfracaro/Garracio/releases)
+- Instale o arquivo *.zip* da versão e plataforma desejada na seção [releases](https://github.com/olucasfracaro/Garracio/releases)
     - Alternativamente, instale a [versão mais recente](https://github.com/olucasfracaro/Garracio/releases/latest)
 - Extraia-o usando um software de sua preferência
 - Execute o programa
@@ -40,7 +42,8 @@ Esse projeto foi feito para destacar a importância de gerenciar seus gastos, co
 > **OBS: Apenas para usuários experientes!**  
 > Usando o código experimental.
 - Clone o repositório
-    - `git clone -b rolling https://github.com/olucasfracaro/Garracio`
+    - `git clone https://github.com/olucasfracaro/Garracio`
+        - **Dica:** Use `-b <nome-da-versao>` antes do _url_ para clonar uma versão específica
 - Entre no diretório
     - `cd Garracio/`
 - Instale os requisitos do Python
@@ -111,9 +114,11 @@ Esse projeto foi feito para destacar a importância de gerenciar seus gastos, co
     > Adicionada a rendaFixa para realizar o resumo mensal automaticamente.  
     > O usuário tem a opção de definir uma renda fixa ou continuar no formato antigo
 
-- [ ] Despesas fixas (pro resumo mensal)
+- [X] Despesas fixas (pro resumo mensal) EXP ()
+	> Falta teste...muito teste kkkkkk  
+	> Mais de 6 horas programando isso 😫
 
-- [ ] Mover o `garracio.json` para uma tabela no MySQL?
-    > Ou deixá-lo mais _seguro/secreto_
+- [ ] Deixar o `garracio.json` mais seguro e secreto
+    > Usando o RedisDB talvez??
 
 - [ ] Reescrever funções do `connsql.py` para usar `from_db_cursor()`

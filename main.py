@@ -7,38 +7,153 @@ from getpass4 import getpass
 from termcolor import colored
 
 # Verifica o SO e define o comando de limpar a tela
-if os.name == 'nt': CL = "cls"
-else: CL = "clear"
+if os.name == 'nt': CL: str = "cls"
+else: CL: str = "clear"
 
 d = datetime.now()
-dia = d.strftime("%d")
-mes = connsql.numeropraMes(int(d.strftime("%m")))
-ano = d.strftime("%Y")[2:4]
+dia: str = d.strftime("%d")
+mes: str = connsql.numeropraMes(int(d.strftime("%m")))
+ano: str = d.strftime("%Y")[2:4]
 
-COLUNAS_PADRAO = ["Etiqueta", "Educação", "Saúde", "Lazer", "Outros"]
+TAB = f"{mes}{ano}"
 
-def adicionarGastos(con, cursor, conf, usuario, dia, mes, ano): # Adicionado dia, mes, ano
+def adicionarGastos(con, cursor, conf: dict, usuario: str, dia: str, mes: str, ano: str): # Adicionado dia, mes, ano
     """
     Adicionar os gastos do dia simulado
     """
-    TAB = f"{mes}{ano}" # Definido localmente
-    colunasStr = ""
+    colunasStr: str = ""
 
-    colunasValores = receberColunas(cols=conf[usuario]['colunas']) #pega os VALUES
+    colunasValores: list = receberColunas(cols=conf[usuario]['colunas']) #pega os VALUES
     colunasValores[0] = f"'{colunasValores[0]}'" # só coloca o '' na etiqueta pra não dar erro
-    subtotal = sum(colunasValores[1:]) #remove a coluna 'Etiqueta'
+    subtotal: float = sum(colunasValores[1:]) #remove a coluna 'Etiqueta'
 
-    colunasValores = ", ".join(list(map(str, colunasValores))) #transforma tudo em string
+    colunasValoresStr: str = ", ".join(list(map(str, colunasValores))) #transforma tudo em string
 
-    colunasStr = ", ".join(conf[usuario]['colunas']) #pega o nome das colunas pra colocar no INTO
+    colunasStr: str = ", ".join(conf[usuario]['colunas']) #pega o nome das colunas pra colocar no INTO
 
-    query = f"INSERT INTO {TAB} ({colunasStr}) VALUES ({dia}, {colunasValores}, {subtotal})"
+    query: str = f"INSERT INTO {TAB} ({colunasStr}) VALUES ({dia}, {colunasValoresStr}, {subtotal})"
 
     cursor.execute(query)
     connsql.mostrarTabela(cursor, "*", TAB)
     con.commit()
 
-def configurarRendaFixa(conf: dict, usuario):
+def verificarDespesasFixas(cursor, con, conf: dict, usuario: str):
+    """
+    Verifica as despesas fixas que devem ser cobradas e executa uma query SQL única para cobrá-las se o dia já passou
+    """
+    if not 'despesasFixas' in conf[usuario]['config']: return None #se não existir nenhuma, retornar None
+
+    despesasFixas: dict[str, list] = conf[usuario]['config']['despesasFixas']
+    colunasStr: str = ", ".join(conf[usuario]['colunas'])
+    praInserir: list = []
+
+    try: cursor.execute(connsql.criarTabela(mes, ano, colunas=conf[usuario]['colunas']))
+    except ProgrammingError: pass
+
+    cobradasQuery: str = f'SELECT Etiqueta FROM {TAB} WHERE '
+
+    #NOTE: "etiqueta": [dia, valor]
+    for etiqueta, _ in despesasFixas.items():
+        cobradasQuery += f'Etiqueta="FIXA: {etiqueta}" OR '
+    cobradasQuery: str = cobradasQuery.rstrip(" OR ")
+
+    cobradasResultado: list[tuple] = connsql.executar(cursor, cobradasQuery)
+    cobradas: list = []
+
+    if bool(cobradasResultado): # se tiver algum resultado
+        for item in cobradasResultado:
+            cobradas.append(item[0]) #adicionar etiqueta no cobradas
+
+    for etiqueta, info in despesasFixas.items():
+        etiquetaF = f"FIXA: {etiqueta}"
+
+        if int(dia) >= info[0] and etiquetaF not in cobradas: #se chegou o dia e ela não foi cobrada ainda nem ta na tabela
+            praInserir.append(f"FIXA: {etiqueta}")
+
+    if len(praInserir) > 0: 
+        #tudo isso pra executar uma "MEGAQUERY" e reduzir carga do MySQL
+        zerosContados: int = colunasStr.count(",") - 2 #excluindo os 3 campos NOT NULL (Dia, Etiqueta, SUBTOTAL)
+        valoresZerados = ''.join(map(str, ["0, " for _ in range(zerosContados)])).rstrip(", ")
+        query: str = f"""INSERT INTO {TAB} ({colunasStr}) VALUES """
+
+        for etiquetaF in praInserir:
+            etiqueta: str = etiquetaF.lstrip("FIXA: ")
+            #                       Dia                 FIXA:           0, 0...             Valor (SUBTOTAL)
+            query += f'({despesasFixas[etiqueta][0]}, "{etiquetaF}", {valoresZerados}, {despesasFixas[etiqueta][1]}), '
+        query = query.rstrip(", ") #remover a ', ' no fim da query final
+
+        cursor.execute(query)
+        con.commit()
+
+        print(f'✅ Despesas fixas ({', '.join(praInserir)}) debitadas com sucesso!\n\n')
+
+def configurarDespesasFixas(conf: dict, usuario: str):
+    """
+    Abre um menu para que o usuário adicione/edite/remova despesas que serão adicionadas automaticamente no dia X do mês com etiqueta Y e valor Z
+    """
+
+    #NOTE: "nome": [dia, valor]
+    despesasFixas: dict = conf[usuario]['config']['despesasFixas'] if 'despesasFixas' in conf[usuario]['config'] else {}
+
+    if not 'despesasFixas' in conf[usuario]['config']: #checa se a chave NÃO existe
+        opc = input(colored("\nSem despesas fixas configuradas!", "black", "on_light_blue")+"\nDeseja adicionar uma? (s/n) ")
+        if opc == "s":
+            etiqueta: str = input("\n✏️ Etiqueta: ")
+            dia = int(input("📅 Dia: ")) # TODO: adicionar check de quantos dias o mês tem, pra não extrapolar (ex: dia 31 de fevereiro)
+            valor = float(input("💳️ Valor: R$"))
+            despesasFixas[etiqueta] = [dia, valor]
+            
+            conf[usuario]['config']['despesasFixas'] = despesasFixas
+            with open('garracio.json', 'w') as f: j.dump(conf, f, indent=4)
+
+            print(colored("\n🔄 Reinicie o programa para aplicar as alterações!", "black", "on_green"))
+            sys.exit()
+
+        else: print(colored("Abortar missão!", "red"))
+    
+    #imprimir tudo em uma tabelinha
+    pt = PrettyTable(["id", "Etiqueta", "Dia", "Valor"])
+    c: int = 1
+    idEtiqueta: dict = {}
+    for etiqueta, info in despesasFixas.items():
+        pt.add_row([c, etiqueta, info[0], info[1]])
+        idEtiqueta[c] = etiqueta
+
+    print(pt)
+    opc = int(input("\n⚙️ Escolha uma opção:\n \
+                \n1-➕ Adicionar despesa fixa \
+                \n2-✏️ Editar despesa fixa \
+                \n3-➖ Remover despesa fixa\n\n=>"))
+    
+    if opc == 1:
+        etiqueta = input("\n✏️ Etiqueta: ")
+        dia = int(input("📅 Dia: "))
+        valor = float(input("💳️ Valor: R$"))
+        
+        despesasFixas[etiqueta] = [dia, valor]
+    elif opc == 2:
+        id = int(input("\n🆔 Digite o id para editar: "))
+        _ = int(input("\n⚙️ Editar o que?\n \
+                        \n1-✏️ Etiqueta \
+                        \n2-📅 Dia \
+                        \n3-💳️ Valor\n\n=>"))
+        if _ == 1:
+            novaEtiqueta = input("\n✏️ Nova etiqueta: ")
+            despesasFixas[novaEtiqueta] = despesasFixas.pop(idEtiqueta[id]) #apaga a etiqueta antiga e atribui a nova aos valores
+        if _ == 2:
+            novoDia = int(input("📅 Novo dia: "))
+            despesasFixas[idEtiqueta[id]] = [novoDia, despesasFixas[idEtiqueta[id]][1]]
+        if _ == 3: 
+            novoValor = float(input("💳️ Novo valor: R$"))
+            despesasFixas[idEtiqueta[id]] = [despesasFixas[idEtiqueta[id]][0], novoValor]
+    elif opc == 3:
+        id = int(input("\n🆔 Digite o id para deletar: "))
+        despesasFixas.pop(idEtiqueta[id])
+
+    conf[usuario]['config']['despesasFixas'] = despesasFixas
+    with open('garracio.json', 'w') as f: j.dump(conf, f, indent=4)
+
+def configurarRendaFixa(conf: dict, usuario: str):
     """
     Configura a renda fixa (salários, mesadas, etc.) e automaticamente adiciona ao resumo mensal (desativando-o)
     """
@@ -64,7 +179,7 @@ def configurarRMminmax(conf, usuario):
     """
 
     minDia, maxDia = input("\n⚙️ Digite o intervalo de tempo em dias para fazer o resumo mensal.\
-                        \nFormato: min-max (incluindo os dois): ").split("-")
+                        \nFormato: <min-max> (incluindo os dois): ").split("-")
     
     conf[usuario]['config']['rmMinMax'] = [int(minDia), int(maxDia)]
 
@@ -76,9 +191,11 @@ def resumoFeito(con, cursor, conf, usuario, dia, mes, ano, semCheck=False):
     Verifica se o resumo mensal foi feito
     semCheck=False: Se a função vai fazer os 'checks' do intervalo de dias e se o resumo mensal foi feito
     """
-    TAB = f"{mes}{ano}" # Definido localmente
-    saidas = 0
-    rendaFixa = conf[usuario]['config']['rendaFixa']
+    TAB: str = f"{mes}{ano}"
+    saidas: float = 0
+    rendaFixa: float = conf[usuario]['config']['rendaFixa']
+
+    if TAB + "R" in connsql.mostrarTabelas(cursor): return True
 
     if semCheck:
         taNoIntervalo = True
@@ -87,7 +204,8 @@ def resumoFeito(con, cursor, conf, usuario, dia, mes, ano, semCheck=False):
         taNoIntervalo: bool = (int(dia) >= conf[usuario]['config']['rmMinMax'][0] and
                                int(dia) <= conf[usuario]['config']['rmMinMax'][1])
 
-        resumoMensalFeito = conf[usuario]['config']['resumoMensalFeito']
+        resumoMensalFeito: bool = conf[usuario]['config']['resumoMensalFeito']
+     
 
     if taNoIntervalo and not resumoMensalFeito and rendaFixa > 0: #caso o usuário receba salário e tenha configurado nas opções
         try: cursor.execute(connsql.criarTabela(mes, ano, res=True))
@@ -95,7 +213,7 @@ def resumoFeito(con, cursor, conf, usuario, dia, mes, ano, semCheck=False):
 
         subtotais = connsql.executar(cursor, f"SELECT SUBTOTAL FROM {TAB}")
         for subtotal in subtotais[0]: saidas += subtotal
-        total = rendaFixa - saidas
+        total: float = rendaFixa - saidas
 
         cursor.execute(f"INSERT INTO {TAB}R VALUES ({rendaFixa}, {saidas}, {total})")
     
@@ -116,7 +234,7 @@ def resumoFeito(con, cursor, conf, usuario, dia, mes, ano, semCheck=False):
             try: cursor.execute(connsql.criarTabela(mes, ano, res=True))
             except ProgrammingError: pass
 
-            subtotal = connsql.executar(cursor, f"SELECT SUBTOTAL FROM {TAB}")
+            subtotal: list[tuple] = connsql.executar(cursor, f"SELECT SUBTOTAL FROM {TAB}")
             
             #descobri o que o 'for' faz, mas deixei assim pq achei engraçado kkkkkkk
             #a variável 'subtotal' = [(subtotal,)] então os dois 'for' são pra entrar na lista e tupla respectivamente
@@ -126,7 +244,7 @@ def resumoFeito(con, cursor, conf, usuario, dia, mes, ano, semCheck=False):
             for i in subtotal: #só Deus sabe o que esse for faz!
                 for k in i:
                     saidas += k
-            total = entra - saidas #calcula o total com base nas entradas e saídas
+            total: float = entra - saidas #calcula o total com base nas entradas e saídas
 
             cursor.execute(f"INSERT INTO {TAB}R VALUES ({entra}, {saidas}, {total})")
             connsql.mostrarTabela(cursor, "*", f"{TAB}R", ordenar=False)
@@ -149,7 +267,7 @@ def login(conf: dict, usuario="arg"):
     os.system(CL)
     
     if usuario == "arg":
-        usuarios = ", ".join(conf['usuarios']) if conf['usuarios'] != [] else colored("Não há usuários cadastrados!", "white", "on_red")
+        usuarios: str = ", ".join(conf['usuarios']) if conf['usuarios'] != [] else colored("Não há usuários cadastrados!", "white", "on_red")
         print(f"🧑 Usuários disponíveis: {usuarios}")
         usuario = input("🧑 Login: ").capitalize()
 
@@ -201,7 +319,7 @@ def login(conf: dict, usuario="arg"):
             configurarColunas(conf, usuario)
 
             con, cursor = None, None 
-            opcoes(conf, usuario, con, cursor, dia, mes, ano)
+            opcoes(conf, usuario, con, cursor, dia, mes, ano) #mandar o usuário pro menu de opções
             
             os.system(CL)
             print(colored("🔄 Reinicie o programa para aplicar as alterações!", "black", "on_green"))
@@ -225,20 +343,23 @@ def inicializar(usuario_arg="arg"): # Renomeado para evitar conflito
     with open("garracio.json", "r") as f: conf = j.load(f)
     usuario, con, cursor = login(conf, usuario=usuario_arg)
     
+    verificarDespesasFixas(cursor, con, conf, usuario)
 
     # Atualiza o estado do resumo mensal
     conf[usuario]['config']['resumoMensalFeito'] = resumoFeito(con, cursor, conf, usuario, dia, mes, ano)
-    if dia == "01": conf[usuario]['config']['resumoMensalFeito'] = False
+    if dia == "01" and conf[usuario]['config']['resumoMensalFeito']:
+        conf[usuario]['config']['resumoMensalFeito'] = False
+
     with open("garracio.json", "w") as f: j.dump(conf, f, indent=4)
 
     return conf, usuario, con, cursor, dia, mes, ano # Retorna todos os valores
 
 
-def receberColunas(cols=COLUNAS_PADRAO):
+def receberColunas(cols=connsql.COLUNAS_PADRAO):
     """
     Pega as saídas do usuário com base nas colunas configuradas
     """
-    valores = []
+    valores: list = []
     
     for i in cols:
         if i == "Etiqueta":
@@ -255,8 +376,8 @@ def configurarColunas(conf, usuario):
     """
     cols = ["Dia", "Etiqueta"]
 
-    colsPadrao = ["Dia"] + COLUNAS_PADRAO + ["SUBTOTAL"]
-    colsPadraoPT = PrettyTable() # o PT é PrettyTable tá pelo amor de Deus
+    colsPadrao: list = ["Dia"] + connsql.COLUNAS_PADRAO + ["SUBTOTAL"]
+    colsPadraoPT = PrettyTable() # o PT é PrettyTable tá pelo amor de Deus CUMPANHERO
     colsPadraoPT.field_names = colsPadrao
 
     colsAtuaisPT = PrettyTable()
@@ -268,7 +389,7 @@ def configurarColunas(conf, usuario):
     cols_str = input("\nDigite as colunas " + colored("em ordem, separadas por '; '", "red") +
                      "\n(não é necessário incluir 'Dia', 'Etiqueta' e 'SUBTOTAL'): ")
 
-    cols_usuario = cols_str.split("; ")
+    cols_usuario: list = cols_str.split("; ")
 
     cols.extend(col for col in cols_usuario if col not in cols)
     
@@ -286,11 +407,12 @@ def opcoes(conf: dict, usuario: str, con, cursor, dia: str, mes: str, ano: str):
     _ = int(input(f"\n⚙️ Selecione uma configuração:\n\
                 \n1-📅 Alterar data\
                 \n2-📆 Realizar o resumo mensal\
-                \n3-💳️ Configurar renda fixa\
-                \n4-⌛️ Configurar intervalo de dias para o resumo mensal\
-                \n5-🧑 Mudar usuário\
-                \n6-🔑 Alterar Senha-Mestra\
-                \n7-📑 Configurar colunas para {usuario}\
+                \n3-💴 Configurar renda fixa\
+                \n4-💳️ Configurar despesas fixas\
+                \n5-⌛️ Configurar intervalo de dias para o resumo mensal\
+                \n6-🧑 Mudar usuário\
+                \n7-🔑 Alterar Senha-Mestra\
+                \n8-📑 Configurar colunas para {usuario}\
                 \n\n=>"))
 
     if _ == 1:
@@ -306,12 +428,14 @@ def opcoes(conf: dict, usuario: str, con, cursor, dia: str, mes: str, ano: str):
     elif _ == 3:
         configurarRendaFixa(conf, usuario)
     elif _ == 4:
-        configurarRMminmax(conf, usuario)
+        configurarDespesasFixas(conf, usuario)
     elif _ == 5:
-        return None, None, None, None, None, None, None, False, True # Último True para indicar que o usuário mudou
+        configurarRMminmax(conf, usuario)
     elif _ == 6:
-        configurarSenhaMestra(conf)
+        return None, None, None, None, None, None, None, False, True # Último True para indicar que o usuário mudou
     elif _ == 7:
+        configurarSenhaMestra(conf)
+    elif _ == 8:
         with open("garracio.json", "r") as f: conf = j.load(f)
         configurarColunas(conf, usuario)
         connsql.reconstruirTabela(cursor, conf, usuario, mes, ano)
@@ -389,7 +513,7 @@ def main(conf, usuario, con, cursor, dia, mes, ano, tipoExecucao=0): # Todos os 
                     main(conf, usuario, con, cursor, dia, mes, ano, tipoExecucao=tipoExecucao)
 
     elif tipoExecucao == 2:
-            backend.iniciar(host="brasa.onthewifi.com", usuario=usuario)
+            backend.iniciar(host=connsql.config['host'], usuario=usuario)
 
 
 if __name__ == "__main__":

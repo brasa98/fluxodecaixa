@@ -37,14 +37,14 @@ def criarTabela(mes, ano, colunas=COLUNAS_PADRAO, res=False) -> str:
     else:
         if colunas == COLUNAS_PADRAO:
             return f"CREATE TABLE {mes}{ano} (ID INT AUTO_INCREMENT PRIMARY KEY, \
-                                            Dia INT, Etiqueta VARCHAR(30) NOT NULL, \
+                                            Dia INT NOT NULL, Etiqueta VARCHAR(30) NOT NULL, \
                                             Educacao FLOAT, Saude FLOAT, \
                                             Lazer FLOAT, Outros FLOAT, \
                                             SUBTOTAL FLOAT NOT NULL DEFAULT 0)"
-        else: 
+        else: #TODO: adicionar campo "outros"
             colunas_cp.pop(0); colunas_cp.pop(0); colunas_cp.pop(-1) # remover 'Dia', 'Etiqueta' e 'SUBTOTAL'
             return f"CREATE TABLE {mes}{ano} (ID INT AUTO_INCREMENT PRIMARY KEY, \
-                                            Dia INT, Etiqueta VARCHAR(30) NOT NULL, \
+                                            Dia INT NOT NULL, Etiqueta VARCHAR(30) NOT NULL, \
                                             {', '.join(col + ' FLOAT' for col in colunas_cp)}, \
                                             SUBTOTAL FLOAT NOT NULL DEFAULT 0)"
         
@@ -91,13 +91,7 @@ def conectar():
     
     return conexao, cursor
 
-from prettytable import PrettyTable as pt
-from termcolor import colored
-
 def mostrarTabela(cursor, vals, tabela, ordenar=True):
-    from prettytable import PrettyTable as pt
-    from termcolor import colored
-
     if ordenar:
         query = f"SELECT {vals} FROM {tabela} ORDER BY Dia ASC"
     else:
@@ -155,11 +149,11 @@ def mostrarTabelas(cursor, enumerarId=False):
         tbs = pt(["Tabelas"])
 
         for nomeTabela in cursor:
-            print(nomeTabela)
+            #print(nomeTabela)
             tbs.add_row(nomeTabela)
 
-        print(tbs)
-        return {}
+        #print(tbs)
+        return [nomeTabela for nomeTabela in cursor]
 
 def executar(cursor, query: str):
     """
@@ -212,5 +206,6 @@ def numeropraMes(mes: int) -> str:
 if __name__ == "__main__":
     config['database'] = "Teste"
     conexao, cursor = conectar()
-    mostrarTabela(cursor, "*", "Maio25R", ordenar=False)
-    mostrarTabelas(cursor, enumerarId=True)
+    print(executar(cursor, f"SELECT Etiqueta FROM Maio25 WHERE Etiqueta='Teste, obvio 2' OR Etiqueta='dia dez'"))
+    mostrarTabela(cursor, "*", "Maio25", ordenar=True)
+    #mostrarTabelas(cursor, enumerarId=True)

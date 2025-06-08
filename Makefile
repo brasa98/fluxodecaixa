@@ -158,29 +158,18 @@ pushDev:
 	git commit -m "$${mensagem}"; \
 	git push origin dev
 
-criarRelease:
-	@bash -c '\
-	read -p "📝 Nome da versão: " nomeVersao; \
-	read -p "🖥️ Plataforma: " plataforma; \
-	if [ "$$plataforma" = "linux" ]; then \
-		pyinstaller --onefile --clean --name "garracio" --add-data="garracio.json:." --add-data="templates:templates" --add-data="static:static" main.py; \
-		zip "Garracio-v$$nomeVersao-$$plataforma.zip" dist/garracio setup.sh; \
-	else \
-		pyinstaller --onefile --clean --name "garracio.exe" --add-data="garracio.json:." --add-data="templates:templates" --add-data="static:static" main.py; \
-		zip "Garracio-v$$nomeVersao-$$plataforma.zip" dist/garracio.exe setup.bat; \
-	fi'
-
 REPO := olucasfracaro/Garracio
 WORKFLOW := build.yml
 BRANCH := dev
 
 buildRelease:
-	@if [ -z "$(description)" ]; then \
-		echo "❌ Você deve fornecer a descrição da release: make buildRelease description=\"vX.Y.Z\""; \
+	@if [ -z "$(version)" ]; then \
+		echo "❌ Você deve fornecer a versão da release: make buildRelease version=\"vX.Y.Z\""; \
 		exit 1; \
 	fi
-	@echo "🚀 Disparando workflow '$(WORKFLOW)' na branch '$(BRANCH)' com descrição: '$(description)'..."
-	@gh workflow run $(WORKFLOW) --repo $(REPO) --ref $(BRANCH) --field description="$(description)"
+	@echo "🚀 Disparando workflow '$(WORKFLOW)' na branch '$(BRANCH)' com versão: '$(version)'..."
+	@gh workflow run $(WORKFLOW) --repo $(REPO) --ref $(BRANCH) --field version="$(version)"
+
 
 buildStatus:
 	@echo "🔍 Verificando status do último workflow dispatch na branch '$(BRANCH)'..."

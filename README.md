@@ -23,6 +23,7 @@ Esse projeto foi feito para destacar a importância de gerenciar seus gastos, co
 ## Instalação
 <a id=instalacao></a>
 ### Requisitos:
+- **git** (_apenas para instalação pelo [código fonte](#instalacao-source)_)
 - **Python** versão 3.11+
 - **MySQL** versão 8.2+
     - **OBS: Usar _docker_ é opcional**
@@ -46,10 +47,9 @@ Esse projeto foi feito para destacar a importância de gerenciar seus gastos, co
         - **Dica:** Use `-b <nome-da-versao>` antes do _url_ para clonar uma versão específica
 - Entre no diretório
     - `cd Garracio/`
-- Instale os requisitos do Python
-    - `pip install -r requirements.txt`
-- Execute o arquivo *setup.sh* (**APENAS PARA LINUX!**)
-    - `./setup.sh`
+- Execute o arquivo de instalação
+    - **Linux**: `./setup.sh`
+    - **Windows**: `setup.bat` ou `.\setup.ps1`
 - Execute o programa
     - `python main.py`
 
@@ -122,3 +122,5 @@ Esse projeto foi feito para destacar a importância de gerenciar seus gastos, co
     > Usando o RedisDB talvez??
 
 - [ ] Reescrever funções do `connsql.py` para usar `from_db_cursor()`
+
+- [X] Criar o `setup.bat` e `setup.ps1` para compatibilidade maior com Windows

@@ -17,6 +17,22 @@ ano: str = d.strftime("%Y")[2:4]
 
 TAB = f"{mes}{ano}"
 
+def inputInteligente(*args, **kwargs):
+    ret = kwargs.pop('ret')
+    limpar = kwargs.pop('limpar', False)
+    strVazia = kwargs.pop('strVazia', True)
+
+    while True:
+        try:
+            entradaStr = input(*args, **kwargs)
+            if not strVazia and entradaStr == '': raise ValueError
+            return ret(entradaStr)
+        except ValueError:
+            if limpar: os.system(CL)
+            if not ret == str: print(colored("\nDigite um número!\n", "red"))
+            else: print(colored("\nDigite algo!\n", "red"))
+
+
 def adicionarGastos(con, cursor, conf: dict, usuario: str, dia: str):
     """
     Adicionar os gastos do dia simulado
@@ -99,8 +115,8 @@ def configurarDespesasFixas(conf: dict, usuario: str):
         opc = input(colored("\nSem despesas fixas configuradas!", "black", "on_light_blue")+"\nDeseja adicionar uma? (s/n) ")
         if opc == "s":
             etiqueta: str = input("\n✏️ Etiqueta: ")
-            dia = int(input("📅 Dia: ")) # TODO: adicionar check de quantos dias o mês tem, pra não extrapolar (ex: dia 31 de fevereiro)
-            valor = float(input("💳️ Valor: R$"))
+            dia = inputInteligente("📅 Dia: ", ret=int) # TODO: adicionar check de quantos dias o mês tem, pra não extrapolar (ex: dia 31 de fevereiro)
+            valor = inputInteligente("💳️ Valor: R$", ret=float)
             despesasFixas[etiqueta] = [dia, valor]
             
             conf[usuario]['config']['despesasFixas'] = despesasFixas
@@ -121,34 +137,34 @@ def configurarDespesasFixas(conf: dict, usuario: str):
         c += 1
 
     print(pt)
-    opc = int(input("\n⚙️ Escolha uma opção:\n \
+    opc = inputInteligente("\n⚙️ Escolha uma opção:\n \
                 \n1-➕ Adicionar despesa fixa \
                 \n2-✏️ Editar despesa fixa \
-                \n3-➖ Remover despesa fixa\n\n=>"))
+                \n3-➖ Remover despesa fixa\n\n=>", ret=int, limpar=True)
     
     if opc == 1:
         etiqueta = input("\n✏️ Etiqueta: ")
-        dia = int(input("📅 Dia: "))
-        valor = float(input("💳️ Valor: R$"))
+        dia = inputInteligente("📅 Dia: ", ret=int)
+        valor = inputInteligente("💳️ Valor: R$", ret=float)
         
         despesasFixas[etiqueta] = [dia, valor]
     elif opc == 2:
-        id = int(input("\n🆔 Digite o id para editar: "))
-        _ = int(input("\n⚙️ Editar o que?\n \
+        id = inputInteligente("\n🆔 Digite o id para editar: ", ret=int)
+        _ = inputInteligente("\n⚙️ Editar o que?\n \
                         \n1-✏️ Etiqueta \
                         \n2-📅 Dia \
-                        \n3-💳️ Valor\n\n=>"))
+                        \n3-💳️ Valor\n\n=>", ret=int, limpar=True)
         if _ == 1:
             novaEtiqueta = input("\n✏️ Nova etiqueta: ")
             despesasFixas[novaEtiqueta] = despesasFixas.pop(idEtiqueta[id]) #apaga a etiqueta antiga e atribui a nova aos valores
         if _ == 2:
-            novoDia = int(input("📅 Novo dia: "))
+            novoDia = inputInteligente("📅 Novo dia: ", ret=int)
             despesasFixas[idEtiqueta[id]] = [novoDia, despesasFixas[idEtiqueta[id]][1]]
         if _ == 3: 
-            novoValor = float(input("💳️ Novo valor: R$"))
+            novoValor = inputInteligente("💳️ Novo valor: R$", ret=float)
             despesasFixas[idEtiqueta[id]] = [despesasFixas[idEtiqueta[id]][0], novoValor]
     elif opc == 3:
-        id = int(input("\n🆔 Digite o id para deletar: "))
+        id = inputInteligente("\n🆔 Digite o id para deletar: ", ret=int)
         despesasFixas.pop(idEtiqueta[id])
 
     conf[usuario]['config']['despesasFixas'] = despesasFixas
@@ -229,7 +245,7 @@ def resumoFeito(con, cursor, conf, usuario, dia, mes, ano, semCheck=False):
         
         opc = input("\n📝 Deseja resumir seu mês? (s/n) ")
         if opc.lower() == 's':
-            entra = float(input("💵 Quanto você ganhou esse mês? R$"))
+            entra = inputInteligente("💵 Quanto você ganhou esse mês? R$", ret=float)
         
             #caso a tabela já exista
             try: cursor.execute(connsql.criarTabela(mes, ano, res=True))
@@ -270,14 +286,14 @@ def login(conf: dict, usuario="arg"):
     if usuario == "arg":
         usuarios: str = ", ".join(conf['usuarios']) if conf['usuarios'] != [] else colored("Não há usuários cadastrados!", "white", "on_red")
         print(f"🧑 Usuários disponíveis: {usuarios}")
-        usuario = input("🧑 Login: ").capitalize()
+        usuario = inputInteligente("🧑 Login: ", ret=str, strVazia=False).capitalize()
 
     if usuario in conf['usuarios']:
         connsql.config['database'] = usuario #verifica se o usuário existe
         while True: #checa a senha
             if conf['senhaMestra']:
                 _ = getpass("🔒️ Senha-Mestra: ")
-                if _ == "": print(colored("Abortar‼️", "red")); sys.exit()
+                if _ == "": print(colored("Abortar missão!", "red")); sys.exit()
                 if hashlib.sha256(_.encode()).hexdigest() == conf['senhaMestra']:
                     print("🔓️ Login realizado!\n")
                     break
@@ -367,7 +383,7 @@ def receberColunas(cols=connsql.COLUNAS_PADRAO):
             _ = input(f"\n✏️ Etiqueta: ")
             valores.append(_)
         elif i not in ["Dia", "SUBTOTAL"]:
-            _ = float(input(f"💳️ {i} R$"))
+            _ = inputInteligente(f"💳️ {i} R$", ret=float)
             valores.append(_)
     return valores
 
@@ -405,7 +421,7 @@ def configurarColunas(conf, usuario):
     return conf
  
 def opcoes(conf: dict, usuario: str, con, cursor, dia: str, mes: str, ano: str):
-    _ = int(input(f"\n⚙️ Selecione uma configuração:\n\
+    _ = inputInteligente(f"\n⚙️ Selecione uma configuração:\n\
                 \n1-📅 Alterar data\
                 \n2-📆 Realizar o resumo mensal\
                 \n3-💴 Configurar renda fixa\
@@ -414,15 +430,15 @@ def opcoes(conf: dict, usuario: str, con, cursor, dia: str, mes: str, ano: str):
                 \n6-🧑 Mudar usuário\
                 \n7-🔑 Alterar Senha-Mestra\
                 \n8-📑 Configurar colunas para {usuario}\
-                \n\n=>"))
+                \n\n=>", ret=int, limpar=True)
 
     if _ == 1:
         print("📅 Formato: dd/mm/aaaa")
-        diaNovo = input("📅 Dia: ")
-        mesNovo = connsql.numeropraMes(int(input("📅 Mês: ")))
-        anoNovo = input("📅 Ano: ")[2:4]
+        diaNovo = inputInteligente("📅 Dia: ", ret=str, strVazia=False)
+        mesNovo = connsql.numeropraMes(inputInteligente("📅 Mês: ", ret=int))
+        anoNovo = inputInteligente("📅 Ano: ", ret=str, strVazia=False)[2:4]
         # Retorna os novos valores para quem chamou (main)
-        return conf, usuario, con, cursor, diaNovo, mesNovo, anoNovo, True # O último True indica que a data foi alterada
+        return conf, usuario, con, cursor, diaNovo, mesNovo, anoNovo, True, False # O último True indica que a data foi alterada
     elif _ == 2:
         if not (con or cursor): print(colored("🔄 Reinicie para acessar essa configuração!", "black", "on_green")); sys.exit()
         resumoFeito(con, cursor, conf, usuario, dia, mes, ano, semCheck=True)
@@ -444,7 +460,7 @@ def opcoes(conf: dict, usuario: str, con, cursor, dia: str, mes: str, ano: str):
     return conf, usuario, con, cursor, dia, mes, ano, False, False # Retorna os valores originais e False para indicar que a data não foi alterada
 
 
-def main(conf, usuario, con, cursor, dia, mes, ano, tipoExecucao=0): # Todos os valores são passados como argumento
+def main(conf, usuario, con, cursor, dia, mes, ano, tipoExecucao=0): #TODO: adicionar um kwarg 'dataSimulada'=bool para ocultar/mostrar print 484
     """
     Função principal
     tipoExecucao:
@@ -456,17 +472,17 @@ def main(conf, usuario, con, cursor, dia, mes, ano, tipoExecucao=0): # Todos os 
     connsql.sincronizar(cursor)
 
     if tipoExecucao == 0:
-        tipoExecucao = int(input(f"{usuario}, selecione a interface:\
+        tipoExecucao = inputInteligente(f"{usuario}, selecione a interface:\
                                 \n1-⌨️Executar diretamente (pela linha de comando)\
                                 \n2-🖥️Executar interface web (EXPERIMENTAL)\
-                                \n\n=>"))
+                                \n\n=>", ret=int, limpar=True)
     
     if tipoExecucao == 1:
         TAB = f"{mes}{ano}"
-        print(colored(f"👋 Olá {usuario}", "yellow") + ", bem vindo ao " + colored("Garracio", "black", "on_green")+"!")
+        print(colored(f"\n👋 Olá {usuario}", "yellow") + ", bem vindo ao " + colored("Garracio", "black", "on_green")+"!")
         print(colored(f"📅 Data atual: {datetime.now().strftime('%d/%m/%Y')}", "white", "on_black"))
         print(colored(f"📅 Data simulada: {dia} de {mes}, {'20'+ano}\n", "black", "on_blue"))
-        opc = int(input("\n\nO que deseja fazer hoje❓️\n \
+        opc = inputInteligente("\n\nO que deseja fazer hoje❓️\n \
                     \n1-➕ Adicionar gastos de hoje\
                     \n2-➖ Remover os gastos de um dia\
                     \n3-🔎 Consultar um dia\
@@ -474,7 +490,7 @@ def main(conf, usuario, con, cursor, dia, mes, ano, tipoExecucao=0): # Todos os 
                     \n5-🧾 Ver outra tabela\
                     \n\n0-⚙️ Opções\
                     \n9-⬅️ Sair\
-                    \n\n=>"))
+                    \n\n=>", ret=int, limpar=True)
 
         #tenta criar a tabela do mês caso não exista
         try: cursor.execute(connsql.criarTabela(mes, ano, colunas=conf[usuario]['colunas']))
@@ -483,24 +499,29 @@ def main(conf, usuario, con, cursor, dia, mes, ano, tipoExecucao=0): # Todos os 
         match(opc):
             case 1: # Adicionar gastos de hoje
                 adicionarGastos(con, cursor, conf, usuario, dia)
+                main(conf, usuario, con, cursor, dia, mes, ano, tipoExecucao=1)
             case 2: # Remover gastos de um dia
                 connsql.mostrarTabela(cursor, "*", TAB)
                 id_remover = input("✏️ Digite o ID da linha que você quer remover: ")
                 cursor.execute(f"DELETE FROM {TAB} WHERE ID={id_remover}")
                 con.commit()
+                main(conf, usuario, con, cursor, dia, mes, ano, tipoExecucao=1)
             case 3: # Consultar dia
                 connsql.executareMostrar(cursor, f"SELECT Dia FROM {TAB} ORDER BY Dia ASC")
-                d_consultar = int(input("\n📅 Qual dia você deseja ver? "))
+                d_consultar = inputInteligente("\n📅 Qual dia você deseja ver? ", ret=int)
                 connsql.executareMostrar(cursor, f"SELECT * FROM {TAB} WHERE Dia={d_consultar} ORDER BY Dia ASC")
+                main(conf, usuario, con, cursor, dia, mes, ano, tipoExecucao=1)
             case 4: # Ver mês
                 connsql.mostrarTabela(cursor, "*", TAB)
+                main(conf, usuario, con, cursor, dia, mes, ano, tipoExecucao=1)
             case 5: # Ver outra tabela
                 tabelasEnum = connsql.mostrarTabelas(cursor, enumerarId=True)
-                id = int(input("✏️ Digite o 'id' da tabela: "))
+                id = inputInteligente("✏️ Digite o 'id' da tabela: ", ret=int)
                 tabela = tabelasEnum[id]
 
                 if not "R" in tabela: connsql.mostrarTabela(cursor, "*", tabela)
                 else: connsql.mostrarTabela(cursor, "*", tabela, ordenar=False)
+                main(conf, usuario, con, cursor, dia, mes, ano, tipoExecucao=1)
             case 9: # Sair
                 print(f"\n👋 Tchau, {usuario}.\n"+colored("Não se esqueça de mim!!", "black", "on_red"))
                 sys.exit()
@@ -510,8 +531,10 @@ def main(conf, usuario, con, cursor, dia, mes, ano, tipoExecucao=0): # Todos os 
                 conf, usuario, con, cursor, dia, mes, ano, dataAlterada, usuarioMudou = opcoes(conf, usuario, con, cursor, dia, mes, ano)
                 if dataAlterada or usuarioMudou:
                     if usuarioMudou:
-                        conf, usuario, con, cursor, dia, mes, ano = inicializar(usuario_arg="arg") 
-                    main(conf, usuario, con, cursor, dia, mes, ano, tipoExecucao=tipoExecucao)
+                        conf, usuario, con, cursor, dia, mes, ano = inicializar(usuario_arg="arg")
+                    os.system(CL)
+                    main(conf, usuario, con, cursor, dia, mes, ano, tipoExecucao=1)
+                main(conf, usuario, con, cursor, dia, mes, ano, tipoExecucao=1)
 
     elif tipoExecucao == 2:
             backend.iniciar(host=connsql.config['host'], usuario=usuario)

@@ -124,3 +124,7 @@ Esse projeto foi feito para destacar a importância de gerenciar seus gastos, co
 - [ ] Reescrever funções do `connsql.py` para usar `from_db_cursor()`
 
 - [X] Criar o `setup.bat` e `setup.ps1` para compatibilidade maior com Windows
+
+- [X] `À prova de idiotas`
+    > Adicionadas verificações para checar se a entrada do usuário condiz com o tipo solicitado (Ex: ver se o Dia é um número e não um "oi")
+

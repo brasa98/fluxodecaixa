@@ -3,6 +3,7 @@ from prettytable import PrettyTable as pt, from_db_cursor
 import json as j, sys
 from dotenv import dotenv_values
 from termcolor import colored
+import calendar
 
 ENV = dotenv_values(".env")
 

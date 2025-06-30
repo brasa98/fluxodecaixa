@@ -11,3 +11,4 @@ stop_docksql.sh
 build/
 dist/
 Garracio-v*
+anotacoes.md

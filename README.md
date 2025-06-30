@@ -56,75 +56,43 @@ Esse projeto foi feito para destacar a importância de gerenciar seus gastos, co
 # Histórico de Atualizações:
 <a id="historico"></a>
 
-- [X] Adicionar detecção de data. (v1.5)
+## v2.7
+- Alterações mínimas na interface de linha de comando
+- Reformulações em menu, revisões de código
+- Adicionada a opção de alterar um dia, caso contenha valores errôneos, por exemplo.
 
-- [X] Adicionar uma tabela para cada mês. (v1)
+## v2.5.x
+- Melhorias na UI e UX (_User Interface, User Experience_) - Emojis e cores no terminal, argumentos CLI, variáveis de ambiente
+- Separação das configurações por usuário
+- Personalização das colunas das tabelas
+- Menus reformulados
+- Adicionada a senha-mestra: maior segurança para entrar no Garracio
+- Configuração do intervalo de dias para fazer o resumo mensal
+- Reescritas funções do `connsql.py` para usar `from_db_cursor()`
+- Criado `setup.bat` e `setup.ps1` para maior compatibilidade com Windows
+- À prova de idiotas: verificações de tipo nas entradas do usuário
 
-- [X] Automaticamente criar tabelas do mês caso não existam. (v1.7)
+## v2.5
+- Adicionar login com senha por usuário na linha de comando
 
-- [X] Adicionar uma tabela para o ano inteiro mostrando o resumo dos meses anteriores. (v1.7)
+## v2.x
+- Gerenciamento de usuários
+- Ordenar gastos por dia
+- Separação das configurações por usuário
+- Configuração do intervalo de dias para fazer o resumo mensal
 
-- [X] Quanto ganhou (fim de mês). EXP (v1.7)
-	> Tabela separada, NOME=MesAnoR  
-	> Colunas: Entradas/Saídas/TOTAL
+## v1.7
+- Automaticamente criar tabelas do mês caso não existam
+- Adicionar uma tabela para o ano inteiro mostrando o resumo dos meses anteriores (resumo mensal)
+- Quanto ganhou (fim de mês)
 
-- [X] Adicionado um arquivo de configuração (garracio.json)
-	> Principalmente para saber se já foi revisado o mês
+## v1.5
+- Adicionar detecção de data
 
-- [X] Criar uma DB por ano?
-	> talvez... não, melhor não.  
-    > Decidido q a DB é por usuário
+## v1.x
+- Adicionar uma tabela para cada mês
+- Adicionada coluna string para identificar cada gasto
+- Adicionado um arquivo de configuração (garracio.json)
+- DB por usuário
 
-- [X] |ID; DIA; *GASTOS FIXOS*; SUBTOTAL| (mensal)
-	> Gastos fixos: Educação Saúde Lazer e Outros  
-    > OUUUU, com a nova atualização v2.5, colunas personalizadas!
-
-- [X] Adicionado o gerenciamento de usuários. (v2.0)
-	> Usuários localizados no garracio.json
-
-- [X] Adicionar coluna string para identificar cada gasto. (v2.5)
-
-- [X] Adicionar usuário padrão e menu de opções. (v2.5)
-    > Desisti do negócio de usuário padrão. Mas o menu ta funcionando
-
-- [X] Ordenar gastos por dia. (v2.1)
-
-- [ ] Adicionar uma interface gráfica web. WIP ()
-	> Usando HTML, CSS e Flask
-
-- [X] Personalização das colunas das tabelas. (v2.5)
-
-- [X] Configuração do intervalo de dias para fazer o resumo mensal.
-
-- [X] Separação das configurações por usuário. (v2.5)
-    > "Lucas": {"config": [], "colunas": []}
-
-- [ ] Adicionar login com senha por usuário, tanto headless quanto na web. EXP (v2.5.1)
-    > ~~Acho melhor usar a senha da database como senha única ao invés de uma por usuário~~
-    > Adicionei uma senha-mestra global no `garracio.json`
-
-- [X] Melhorias na UI e UX (_User Interface, User Experience_). EXP (v2.5.5)
-    > Emojis e cores no terminal  
-    > Junto com argumentos na CLI e varíaveis de ambiente '.env'
-
-- [ ] Colorir Entradas de green e Saídas de red
-    > Metade feito, falta algumas ainda
-
-- [X] Salário (automaticamente adicionar no resumo mensal)
-    > Adicionada a rendaFixa para realizar o resumo mensal automaticamente.  
-    > O usuário tem a opção de definir uma renda fixa ou continuar no formato antigo
-
-- [X] Despesas fixas (pro resumo mensal) EXP ()
-	> Falta teste...muito teste kkkkkk  
-	> Mais de 6 horas programando isso 😫
-
-- [ ] Deixar o `garracio.json` mais seguro e secreto
-    > Usando o RedisDB talvez??
-
-- [ ] Reescrever funções do `connsql.py` para usar `from_db_cursor()`
-
-- [X] Criar o `setup.bat` e `setup.ps1` para compatibilidade maior com Windows
-
-- [X] `À prova de idiotas`
-    > Adicionadas verificações para checar se a entrada do usuário condiz com o tipo solicitado (Ex: ver se o Dia é um número e não um "oi")
-
+---

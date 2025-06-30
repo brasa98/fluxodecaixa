@@ -7,8 +7,8 @@ import calendar
 
 ENV = dotenv_values(".env")
 
-MESES = ["Janeiro", "Fevereiro", "Marco", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"]
-COLUNAS_PADRAO = ["Etiqueta", "Educação", "Saúde", "Lazer", "Outros"]
+MESES = ("Janeiro", "Fevereiro", "Marco", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro")
+COLUNAS_PADRAO = ("Etiqueta", "Educação", "Saúde", "Lazer", "Outros")
 EXCECOES = ("mysql", "sys", "information_schema", "performance_schema", "virobase", "AMPS", "ADM", "python", "main.py", "garracio", "-cli", "-web", "--help", "-h", "help", "?")
 
 try:
@@ -171,13 +171,10 @@ def executareMostrar(cursor, query: str) -> None:
     Executa uma query no MySQL e exibe os resultados obtidos
     """
     cursor.execute(query)
-    resultados = cursor.fetchall()
 
-    _ = pt()
-    _.field_names = [i[0] for i in cursor.description]
-    for linha in resultados:
-        _.add_row(linha)
-    print(_)
+    tabela = pt()
+    tabela.from_db_cursor(cursor)
+    print(tabela)
 
 def sincronizar(cursor):
     """

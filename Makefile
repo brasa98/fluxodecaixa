@@ -26,8 +26,8 @@ limpar:
 instalar:
 	pip install -r requirements.txt
 
-verTODOS:
-	@cat README.md | grep -E '^\s*-\s\[\s\]'
+verTarefas:
+	@cat anotacoes.md | grep -E '^\s*-\s\[\s\]'
 
 # === Etapas do Sprint ===
 

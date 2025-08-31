@@ -15,7 +15,7 @@ dia: str = d.strftime("%d")
 mes: str = connsql.numeropraMes(int(d.strftime("%m")))
 ano: str = d.strftime("%Y")[2:4]
 
-dataLista: list = [dia, connsql.numeropraMes(mes), ano[2:4]]
+dataLista: list = [dia, mes, ano]
 
 TAB = f"{mes}{ano}"
 
@@ -35,7 +35,7 @@ def inputInteligente(*args, **kwargs):
             else: print(colored("\nDigite algo!\n", "red"))
 
 
-def adicionarGastos(con, cursor, conf: dict, usuario: str, dia: str):
+def adicionarGastos(con, cursor, conf: dict, dia: str,  usuario: str):
     """
     Adicionar os gastos do dia simulado
     """
@@ -55,27 +55,55 @@ def adicionarGastos(con, cursor, conf: dict, usuario: str, dia: str):
     connsql.mostrarTabela(cursor, "*", TAB)
     con.commit()
 
-def alterarDia(con, cursor, id: int):
-    nomeColuna = inputInteligente("✏️ Digite o nome da coluna para alterar o valor: ", ret=str, strVazia=False)
+def alterarEntrada(con, cursor, tabela, id=None, col=None):
+    """
+    Altera uma entrada em uma tabela
+    id=None: A tabela é de resumo
+    col=None: A tabela é normal
+    """
+    nomeColuna, query = "", ""
+    if id:
+        nomeColuna = inputInteligente("✏️ Digite o nome da coluna para alterar o valor: ", ret=str, strVazia=False)
 
-    if nomeColuna.upper() in ("ID", "SUBTOTAL"):
-        print(colored("Impossível alterar o id e o subtotal!", "red"))
-        return
+        if nomeColuna.upper() in ("ID", "SUBTOTAL"):
+            print(colored("Impossível alterar o id e o subtotal!", "red"))
+            return
 
-    if nomeColuna == "Dia": tipoVal = int
-    elif nomeColuna == "Etiqueta": tipoVal = str
-    else: tipoVal = float
+        if nomeColuna == "Dia": tipoVal = int
+        elif nomeColuna == "Etiqueta": tipoVal = str
+        else: tipoVal = float
 
-    valorColuna = inputInteligente("✏️ Digite o novo valor: ", ret=tipoVal)
+        valorColuna = inputInteligente("✏️ Digite o novo valor: ", ret=tipoVal)
 
-    if nomeColuna != "Etiqueta": query: str = f'UPDATE {TAB} SET {nomeColuna}={valorColuna} WHERE ID={id}'
-    else: query: str = f'UPDATE {TAB} SET {nomeColuna}="{valorColuna}" WHERE ID={id}'
+        if nomeColuna != "Etiqueta": query: str = f'UPDATE {tabela} SET {nomeColuna}={valorColuna} WHERE ID={id}'
+        else: query: str = f'UPDATE {tabela} SET {nomeColuna}="{valorColuna}" WHERE ID={id}'
+
+    elif col:
+        nomeColuna = col
+        if nomeColuna.upper() == "TOTAL":
+            print(colored("Impossível alterar o TOTAL!", "red"))
+            return
+        
+        valorColuna = inputInteligente("✏️ Digite o novo valor: ", ret=float)
+
+        valores = connsql.executar(cursor, f"SELECT * FROM {tabela}")
+        novoTotal = valores[0][0] - valores[0][1]
+
+        cursor.execute(f'UPDATE {tabela} SET TOTAL={novoTotal}')
+
+        query: str = f'UPDATE {tabela} SET {nomeColuna}={valorColuna}'
 
     cursor.execute(query)
     con.commit()
 
-    print(colored(f"\n✅ Valor da coluna '{nomeColuna}' no id {id} alterada com sucesso!", "black", "on_green"))
-    connsql.mostrarTabela(cursor, "*", TAB, ordenar=True) #TODO: destacar valor da coluna recém-alterada
+    os.system(CL)
+
+    if id:
+        print(colored(f"\n✅ Valor da coluna '{nomeColuna}' no id {id} alterada com sucesso!", "black", "on_green"))
+    else:
+        print(colored(f"\n✅ Valor da coluna '{nomeColuna}' alterada com sucesso!", "black", "on_green"))
+
+    connsql.mostrarTabela(cursor, "*", tabela, ordenar=not col) #TODO: destacar valor da coluna recém-alterada
     print()
 
 def verificarDespesasFixas(cursor, con, conf: dict, usuario: str):
@@ -153,19 +181,23 @@ def configurarDespesasFixas(conf: dict, usuario: str):
         else: print(colored("Abortar missão!", "red"))
     
     #imprimir tudo em uma tabelinha
-    pt = PrettyTable(["id", "Etiqueta", "Dia", "Valor"])
-    c: int = 1
-    idEtiqueta: dict = {}
-    for etiqueta, info in despesasFixas.items():
-        pt.add_row([c, etiqueta, info[0], info[1]])
-        idEtiqueta[c] = etiqueta
-        c += 1
-
+    def imprimir():
+        pt = PrettyTable(["id", "Etiqueta", "Dia", "Valor"])
+        c: int = 1
+        idEtiqueta: dict = {}
+        for etiqueta, info in despesasFixas.items():
+            pt.add_row([c, etiqueta, info[0], info[1]])
+            idEtiqueta[c] = etiqueta
+            c += 1
+        return idEtiqueta, pt
+    
+    idEtiqueta, pt = imprimir()
     print(pt)
+
     opc = inputInteligente("\n⚙️ Escolha uma opção:\n \
-                \n1-➕ Adicionar despesa fixa \
-                \n2-✏️ Editar despesa fixa \
-                \n3-➖ Remover despesa fixa\n\n=>", ret=int, limpar=True)
+                \n[1] ➕ Adicionar despesa fixa \
+                \n[2] ✏️ Editar despesa fixa \
+                \n[3] ➖ Remover despesa fixa\n\n=>", ret=int, limpar=True)
     
     if opc == 1:
         etiqueta = input("\n✏️ Etiqueta: ")
@@ -176,9 +208,9 @@ def configurarDespesasFixas(conf: dict, usuario: str):
     elif opc == 2:
         id = inputInteligente("\n🆔 Digite o id para editar: ", ret=int)
         _ = inputInteligente("\n⚙️ Editar o que?\n \
-                        \n1-✏️ Etiqueta \
-                        \n2-📅 Dia \
-                        \n3-💳️ Valor\n\n=>", ret=int, limpar=True)
+                        \n[1] ✏️ Etiqueta \
+                        \n[2] 📅 Dia \
+                        \n[3] 💳️ Valor\n\n=>", ret=int, limpar=True)
         if _ == 1:
             novaEtiqueta = input("\n✏️ Nova etiqueta: ")
             despesasFixas[novaEtiqueta] = despesasFixas.pop(idEtiqueta[id]) #apaga a etiqueta antiga e atribui a nova aos valores
@@ -191,6 +223,8 @@ def configurarDespesasFixas(conf: dict, usuario: str):
     elif opc == 3:
         id = inputInteligente("\n🆔 Digite o id para deletar: ", ret=int)
         despesasFixas.pop(idEtiqueta[id])
+
+    print(imprimir()[1])
 
     conf[usuario]['config']['despesasFixas'] = despesasFixas
     with open('garracio.json', 'w') as f: j.dump(conf, f, indent=4)
@@ -228,12 +262,11 @@ def configurarRMminmax(conf, usuario):
     with open("garracio.json", "w") as f: j.dump(conf, f, indent=4)
     return
 
-def resumoFeito(con, cursor, conf, usuario, *dataLista, semCheck=False):
+def resumoFeito(con, cursor, conf, usuario, dataLista, semCheck=False):
     """
     Verifica se o resumo mensal foi feito
     semCheck=False: Se a função vai fazer os 'checks' do intervalo de dias e se o resumo mensal foi feito
     """
-    TAB: str = f"{mes}{ano}"
     saidas: float = 0
     rendaFixa: float = conf[usuario]['config']['rendaFixa']
 
@@ -247,14 +280,16 @@ def resumoFeito(con, cursor, conf, usuario, *dataLista, semCheck=False):
                                int(dia) <= conf[usuario]['config']['rmMinMax'][1])
 
         resumoMensalFeito: bool = conf[usuario]['config']['resumoMensalFeito']
-     
+
 
     if taNoIntervalo and not resumoMensalFeito and rendaFixa > 0: #caso o usuário receba salário e tenha configurado nas opções
-        try: cursor.execute(connsql.criarTabela(mes, ano, res=True))
+        try: cursor.execute(connsql.criarTabela(dataLista[1], dataLista[2], res=True)) #TODO: consertar essa merda, nao ta criando a tabela
         except ProgrammingError: pass
 
         subtotais = connsql.executar(cursor, f"SELECT SUBTOTAL FROM {TAB}")
-        for subtotal in subtotais[0]: saidas += subtotal
+
+        for subtotal in subtotais:
+            saidas += subtotal[0]
         total: float = rendaFixa - saidas
 
         cursor.execute(f"INSERT INTO {TAB}R VALUES ({rendaFixa}, {saidas}, {total})")
@@ -267,10 +302,9 @@ def resumoFeito(con, cursor, conf, usuario, *dataLista, semCheck=False):
         return True
 
     elif taNoIntervalo and not resumoMensalFeito and rendaFixa == 0:
-        
         opc = input("\n📝 Deseja resumir seu mês? (s/n) ")
         if opc.lower() == 's':
-            entra = inputInteligente("💵 Quanto você ganhou esse mês? R$", ret=float)
+            entradas = inputInteligente("💵 Quanto você ganhou esse mês? R$", ret=float)
         
             #caso a tabela já exista
             try: cursor.execute(connsql.criarTabela(mes, ano, res=True))
@@ -286,17 +320,16 @@ def resumoFeito(con, cursor, conf, usuario, *dataLista, semCheck=False):
             for i in subtotal: #só Deus sabe o que esse for faz!
                 for k in i:
                     saidas += k
-            total: float = entra - saidas #calcula o total com base nas entradas e saídas
+            total: float = entradas - saidas #calcula o total com base nas entradas e saídas
 
-            cursor.execute(f"INSERT INTO {TAB}R VALUES ({entra}, {saidas}, {total})")
+            cursor.execute(f"INSERT INTO {TAB}R VALUES ({entradas}, {saidas}, {total})")
             connsql.mostrarTabela(cursor, "*", f"{TAB}R", ordenar=False)
             con.commit()
     
-            return True # Retorna True se o resumo foi feito
+            return True #retorna True porque o resumo foi concluído e feito
         else: return False #se o usuário não quiser
 
-
-    return True # Retorna True se não era dia de fazer o resumo ou semCheck era True e o usuário não quis
+    return True #retorna True se não era dia de fazer o resumo ou semCheck era True e o usuário não quis
 
 
 def login(conf: dict, usuario="arg"):
@@ -387,7 +420,7 @@ def inicializar(usuario_arg="arg"):
     
     verificarDespesasFixas(cursor, con, conf, usuario)
 
-    conf[usuario]['config']['resumoMensalFeito'] = resumoFeito(con, cursor, conf, usuario, *dataLista)
+    conf[usuario]['config']['resumoMensalFeito'] = resumoFeito(con, cursor, conf, usuario, dataLista)
     if dia == "01" and conf[usuario]['config']['resumoMensalFeito']:
         conf[usuario]['config']['resumoMensalFeito'] = False
 
@@ -435,7 +468,7 @@ def configurarColunas(conf, usuario):
 
     colsUsuario: list = colsStr.split("; ")
 
-    cols.extend(col for col in colsUsuario if col not in cols)
+    cols.extend(col.capitalize() for col in colsUsuario if col not in cols)
     
     for i in range(len(cols)): #deixar tudo com letra maiúscula
         cols[i] = cols[i].capitalize()
@@ -447,21 +480,21 @@ def configurarColunas(conf, usuario):
     with open("garracio.json", "w") as f: j.dump(conf, f, indent=4)
     return conf
  
-def opcoes(conf: dict, usuario: str, con, cursor, dia: str, mes: str, ano: str):
+def opcoes(conf: dict, usuario: str, con, cursor, dataLista):
     _ = inputInteligente(f"\n⚙️ Selecione uma configuração:\n\
-                \n1-📆 Realizar o resumo mensal\
-                \n2-💴 Configurar renda fixa\
-                \n3-💳️ Configurar despesas fixas\
-                \n4-⌛️ Configurar intervalo de dias para o resumo mensal\
-                \n5-🧑 Mudar usuário\
-                \n6-🔑 Alterar Senha-Mestra\
-                \n7-📑 Configurar colunas para {usuario}\
-                \n\n9-⬅️ Voltar\
+                \n[1] 📆 Realizar o resumo mensal\
+                \n[2] 💴 Configurar renda fixa\
+                \n[3] 💳️ Configurar despesas fixas\
+                \n[4] ⌛️ Configurar intervalo de dias para o resumo mensal\
+                \n[5] 🧑 Mudar usuário\
+                \n[6] 🔑 Alterar Senha-Mestra\
+                \n[7] 📑 Configurar colunas para {usuario}\
+                \n\n[9] ⬅️ Voltar\
                 \n\n=>", ret=int, limpar=True)
 
     if _ == 1:
         if not (con or cursor): print(colored("🔄 Reinicie para acessar essa configuração!", "black", "on_green")); sys.exit()
-        resumoFeito(con, cursor, conf, usuario, *dataLista, semCheck=True)
+        resumoFeito(con, cursor, conf, usuario, dataLista, semCheck=True)
     elif _ == 2:
         configurarRendaFixa(conf, usuario)
     elif _ == 3:
@@ -491,24 +524,26 @@ def main(conf, usuario, con, cursor, *dataLista, tipoExecucao=0, dataSimulada=Fa
         - CLI (1)
         - Web (2)
     """
+    global TAB
     
     connsql.sincronizar(cursor)
 
 
     if tipoExecucao == 0:
         tipoExecucao = inputInteligente(f"{usuario}, selecione a interface:\
-                                \n1-⌨️Executar diretamente (pela linha de comando)\
-                                \n2-🖥️Executar interface web (EXPERIMENTAL)\
+                                \n[1] ⌨️Executar diretamente (pela linha de comando)\
+                                \n[2] 🖥️Executar interface web (EXPERIMENTAL)\
                                 \n\n=>", ret=int, limpar=True)
     
     if tipoExecucao == 1:
-        TAB = f"{mes}{ano}"
+        TAB = f"{dataLista[1]}{dataLista[2]}"
+
         print(colored(f"\n👋 Olá {usuario}", "yellow") + ", bem vindo ao "+ colored("Garracio", "black", "on_green")+"!\n")
 
-        print(colored(f"📅 Data atual: {datetime.now().strftime('%d/%m/%Y')}", "white", "on_black"), end='')
+        print(colored(f"📅 Data atual: {d.strftime('%d/%m/%Y')}", "white", "on_black"), end='')
 
         print(
-            colored(f"\n📅 Data simulada: {dia} de {mes}, {'20'+ano}\n", "black", "on_blue"),
+            colored(f"\n📅 Data simulada: {dataLista[0]} de {dataLista[1]}, {'20'+dataLista[2]}\n", "black", "on_blue"),
             end=''
         ) if dataSimulada else None
 
@@ -517,7 +552,7 @@ def main(conf, usuario, con, cursor, *dataLista, tipoExecucao=0, dataSimulada=Fa
             "\n\nO que deseja fazer hoje❓️\n \
             \n[1] ➕ Adicionar gastos de hoje\
             \n[2] ➖ Remover os gastos de um dia\
-            \n[3] ✏️ Alterar um dia\
+            \n[3] ✏️ Alterar entrada\
             \n[4] 🔎 Consultar um dia\
             \n[5] 📊 Ver tabela do mês\
             \n[6] 🧾 Ver outra tabela\
@@ -526,8 +561,10 @@ def main(conf, usuario, con, cursor, *dataLista, tipoExecucao=0, dataSimulada=Fa
             \n\n=>",
             ret=str, limpar=True, strVazia=False)
 
+        print()
+
         #tenta criar a tabela do mês caso não exista
-        try: cursor.execute(connsql.criarTabela(mes, ano, colunas=conf[usuario]['colunas']))
+        try: cursor.execute(connsql.criarTabela(dataLista[1], dataLista[2], colunas=conf[usuario]['colunas']))
         except ProgrammingError: pass
 
         match(opc):
@@ -541,7 +578,7 @@ def main(conf, usuario, con, cursor, *dataLista, tipoExecucao=0, dataSimulada=Fa
                 main(conf, usuario, con, cursor, *dataNovaLista, tipoExecucao=1, dataSimulada=True)
 
             case '1': # Adicionar gastos de hoje
-                adicionarGastos(con, cursor, conf, usuario, dia)
+                adicionarGastos(con, cursor, conf, dataLista[0], usuario)
                 main(conf, usuario, con, cursor, *dataLista, tipoExecucao=1, dataSimulada=dataSimulada)
 
             case '2': # Remover gastos de um dia
@@ -552,13 +589,24 @@ def main(conf, usuario, con, cursor, *dataLista, tipoExecucao=0, dataSimulada=Fa
                 main(conf, usuario, con, cursor, *dataLista, tipoExecucao=1, dataSimulada=dataSimulada)
 
             case '3': # Alterar um dia (por id)
-                connsql.mostrarTabela(cursor, "*", TAB)
-                idAlterar = inputInteligente("\n✏️ Digite o ID do dia a alterar: ", ret=int)
+                tabelasEnum = connsql.mostrarTabelas(cursor, enumerarId=True)
+                id = inputInteligente("\n✏️ Digite o ID da tabela: ", ret=int)
+                tabela = tabelasEnum[id]
+                
+                if not "R" in tabela:
+                    connsql.mostrarTabela(cursor, "*", tabela)
+                    idAlterar = inputInteligente("\n✏️ Digite o ID da entrada a alterar: ", ret=int)
 
-                alterarDia(con, cursor, idAlterar)
+                    alterarEntrada(con, cursor, tabela, id=idAlterar)
+
+                else:
+                    connsql.mostrarTabela(cursor, "*", tabela, ordenar=False)
+                    colunaAlterar = inputInteligente("\n✏️ Digite o nome da coluna a alterar: ", ret=str, strVazia=False)
+
+                    alterarEntrada(con, cursor, tabela, col=colunaAlterar)
 
                 main(conf, usuario, con, cursor, *dataLista, tipoExecucao=1, dataSimulada=dataSimulada)
-                
+
             case '4': # Consultar dia
                 connsql.executareMostrar(cursor, f"SELECT Dia FROM {TAB} ORDER BY Dia ASC")
                 diaConsultar = inputInteligente("\n📅 Qual dia você deseja ver? ", ret=int)
@@ -582,9 +630,8 @@ def main(conf, usuario, con, cursor, *dataLista, tipoExecucao=0, dataSimulada=Fa
                 print(f"\n👋 Tchau, {usuario}.\n"+colored("Não se esqueça de mim!!", "black", "on_red"))
                 sys.exit()
             case '0': # Opções
-                # A função opcoes agora retorna os valores, e main os atualiza
                 os.system(CL)
-                conf, usuario, con, cursor, *dataLista, dataAlterada, usuarioMudou = opcoes(conf, usuario, con, cursor, dia, mes, ano)
+                conf, usuario, con, cursor, *dataLista, dataAlterada, usuarioMudou = opcoes(conf, usuario, con, cursor, dataLista)
                 if dataAlterada or usuarioMudou:
                     if usuarioMudou:
                         conf, usuario, con, cursor, *dataLista = inicializar(usuario_arg="arg")
@@ -603,7 +650,7 @@ if __name__ == "__main__":
         print("Uso: [ARGS] usuario\n\nARGS:\
         \n\t-cli: Executar interface em linha de comando \
         \n\n\t-web: Executar interface na web (EXPERIMENTAL!) \
-        \n\nusuario: Nome do usuário (inicial maiúscula) para login\n")
+        \n\nusuario: Nome do usuário para login\n")
         sys.exit() 
 
     # Determina o usuário a partir dos argumentos ou usa a inicialização padrão

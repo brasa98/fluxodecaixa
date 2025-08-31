@@ -1,6 +1,6 @@
 import mysql.connector as mysqlc
 from prettytable import PrettyTable as pt, from_db_cursor
-import json as j, sys
+import json as j, sys, re
 from dotenv import dotenv_values
 from termcolor import colored
 import calendar
@@ -8,7 +8,7 @@ import calendar
 ENV = dotenv_values(".env")
 
 MESES = ("Janeiro", "Fevereiro", "Marco", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro")
-COLUNAS_PADRAO = ("Etiqueta", "Educação", "Saúde", "Lazer", "Outros")
+COLUNAS_PADRAO = ["Etiqueta", "Educação", "Saúde", "Lazer", "Outros"]
 EXCECOES = ("mysql", "sys", "information_schema", "performance_schema", "virobase", "AMPS", "ADM", "python", "main.py", "garracio", "-cli", "-web", "--help", "-h", "help", "?")
 
 try:
@@ -22,6 +22,38 @@ try:
 except KeyError:
     print(colored("Você não definiu as variáveis de ambiente!\nInclua-as no '.env' ou execute o 'setup.sh'", "white", "on_red"))
     sys.exit()
+
+def ordenarLista(lista: list[str]) -> list[str]:
+    """
+    Ordena uma lista de nomes de tabelas cronologicamente por mês e ano,
+    com tratamento especial para o sufixo 'R'.
+    """
+    ordemMeses = {
+        "janeiro": 1, "fevereiro": 2, "marco": 3, "abril": 4, "maio": 5,
+        "junho": 6, "julho": 7, "agosto": 8, "setembro": 9, "outubro": 10,
+        "novembro": 11, "dezembro": 12
+    }
+
+    def obterChaveOrdenacao(nomeTabela):
+        correspondencia = re.match(r"([a-zA-Z]+)(\d{2})(R)?", nomeTabela, re.IGNORECASE)
+        if not correspondencia:
+            return (9999, 99, 0, nomeTabela)
+
+        mesString, anoString, sufixoR = correspondencia.groups()
+        mesMinusculo = mesString.lower()
+        
+        numeroMes = ordemMeses.get(mesMinusculo, 99)
+        
+        numeroAno = int(anoString)
+        
+        # Usa um valor numérico para ordenar tabelas 'R' após suas equivalentes
+        temR = 1 if sufixoR else 0
+        
+        #a chave determina a ordem: ano, mês, e se é de resumo
+        return (numeroAno, numeroMes, temR)
+
+    # Ordena a lista usando a chave customizada
+    return sorted(lista, key=obterChaveOrdenacao)
 
 def criarTabela(mes, ano, colunas=COLUNAS_PADRAO, res=False) -> str:
     """
@@ -133,16 +165,18 @@ def mostrarTabelas(cursor, enumerarId=False):
     """
     Mostra as tabelas disponíveis para visualização
     """
-    cursor.execute("SHOW TABLES")
-    _ = []
+    tabelas = []
+    resultados = executar(cursor, "SHOW TABLES")
+    
+    for tupla in resultados:
+        tabelas.append(tupla[0])
+    tabelas = ordenarLista(tabelas)
 
     if enumerarId:
         tbs = pt(["id", "Tabelas"])
-        for nomeTabela in cursor.fetchall(): _.append(nomeTabela[0])
 
         #adiciona um índice pra cada tabela
-        tabelasEnum = {i: tabela for i, tabela in enumerate(_, start=1)}
-        print(tabelasEnum)
+        tabelasEnum = {i: tabela for i, tabela in enumerate(tabelas, start=1)}
         tbs.add_rows(tuple(tabelasEnum.items()))
         print(tbs)
         return tabelasEnum
@@ -150,12 +184,11 @@ def mostrarTabelas(cursor, enumerarId=False):
     else:
         tbs = pt(["Tabelas"])
 
-        for nomeTabela in cursor:
-            #print(nomeTabela)
-            tbs.add_row(nomeTabela)
+        for tabela in tabelas:
+            tbs.add_row([tabela])
 
         #print(tbs)
-        return [nomeTabela for nomeTabela in cursor]
+        return tabelas
 
 def executar(cursor, query: str):
     """
@@ -173,7 +206,7 @@ def executareMostrar(cursor, query: str) -> None:
     cursor.execute(query)
 
     tabela = pt()
-    tabela.from_db_cursor(cursor)
+    from_db_cursor(cursor)
     print(tabela)
 
 def sincronizar(cursor):
@@ -203,8 +236,26 @@ def numeropraMes(mes: int) -> str:
     return ""
 
 if __name__ == "__main__":
-    config['database'] = "Teste"
+    config['database'] = "Roseli"
     conexao, cursor = conectar()
     #print(executar(cursor, f"SELECT Etiqueta FROM Maio25 WHERE Etiqueta='Teste, obvio 2' OR Etiqueta='dia dez'"))
     #mostrarTabela(cursor, "*", "Maio25", ordenar=True)
-    mostrarTabelas(cursor, enumerarId=True)
+
+    """ Código pra geração automática de resumos mensais
+    entradas = 4712.82
+
+    for mes in ("Maio", "Junho"):
+        saidas = 0
+        try: cursor.execute(criarTabela(mes, "25", res=True))
+        except: pass
+
+        subtotais = executar(cursor, f"SELECT SUBTOTAL FROM {mes}25")
+        for subtotal in subtotais:
+            saidas += subtotal[0]
+        total = entradas - saidas
+
+        print(f"Mês de {mes}, Entradas: {entradas}, Saídas: {saidas}, TOTAL: {total}")
+
+        cursor.execute(f"INSERT INTO {mes}25R VALUES ({entradas}, {saidas}, {total})")
+        conexao.commit()
+    """

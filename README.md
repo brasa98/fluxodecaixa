@@ -1,5 +1,9 @@
 # Garracio: **Ga**stos **racio**nais e controlados
 
+> [!IMPORTANT]  
+> O desenvolvimento do Garracio foi **pausado temporariamente** para dar atenção a um outro projeto  
+> Fiquem atentos 👀
+
 ## Sumário
 - [Introdução](#introducao)
 - [Instalação](#instalacao)
